@@ -12,36 +12,44 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import { FONTS } from '../styles/typography';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const LoginScreen = ({ navigation }) => {
+const ForgotPasswordScreen = ({ navigation }) => {
     const [showPassword, setShowPassword] = useState(false);
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.container}
-        >
-            <ScrollView
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scroll}>
-                <View style={styles.card}>
-                    <Text style={styles.title}>BPicker</Text>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={styles.container}
+            >
+                <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={() => navigation.goBack()}
+                >
+                    <Icon name="arrow-left" size={wp('7%')} color="#fff" />
+                </TouchableOpacity>
+                <ScrollView
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.scroll}>
+                    <View style={styles.card}>
+                        <Text style={styles.title}>Forgot Password</Text>
 
-                    {/* Mobile Number Input */}
-                    <View style={styles.inputContainer}>
-                        <TextInput
-                            placeholder="Mobile Number"
-                            placeholderTextColor="#999"
-                            keyboardType="phone-pad"
-                            maxLength={10}
-                            style={styles.input}
-                        />
-                        <Icon name="cellphone" size={wp('5%')} color="#777" />
-                    </View>
+                        {/* Mobile Number Input */}
+                        <View style={styles.inputContainer}>
+                            <TextInput
+                                placeholder="Mobile Number"
+                                placeholderTextColor="#999"
+                                keyboardType="phone-pad"
+                                maxLength={10}
+                                style={styles.input}
+                            />
+                            <Icon name="cellphone" size={wp('5%')} color="#777" />
+                        </View>
 
-                    {/* Password Input */}
-                    <View style={styles.inputContainer}>
+                        {/* Password Input */}
+                        {/* <View style={styles.inputContainer}>
                         <TextInput
                             placeholder="Password"
                             placeholderTextColor="#999"
@@ -55,30 +63,35 @@ const LoginScreen = ({ navigation }) => {
                                 color={!showPassword ? "#777" : "#C93D14"}
                             />
                         </TouchableOpacity>
-                    </View>
+                    </View> */}
 
-                    {/* Login Button */}
-                    <TouchableOpacity onPress={() =>
-                        navigation.replace('MainTabs')
-                    } style={styles.button}>
-                        <Text style={styles.buttonText}>LOGIN</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() =>
+                        {/* Login Button */}
+                        <TouchableOpacity onPress={() =>
+                            navigation.navigate('Otp')
+                        } style={styles.button}>
+                            <Text style={styles.buttonText}>Send OTP</Text>
+                        </TouchableOpacity>
+                        {/* <TouchableOpacity onPress={() =>
                         navigation.navigate("ForgotPassword")
                     } style={styles.forgotPasswordButton}>
                         <Text style={styles.forgotPasswordText}>Forgot Password</Text>
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
 
-                    {/* <Text style={styles.footerText}>Powered by Kapra</Text> */}
-                </View>
-            </ScrollView>
-        </KeyboardAvoidingView>
+                        {/* <Text style={styles.footerText}>Powered by Kapra</Text> */}
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 };
 
-export default LoginScreen;
+export default ForgotPasswordScreen;
 
 const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: '#FF7148',
+    },
     container: {
         flex: 1,
         backgroundColor: '#FF7148',
@@ -100,12 +113,12 @@ const styles = StyleSheet.create({
     },
 
     title: {
-        fontSize: wp('6%'),
+        fontSize: wp('5%'),
         // fontWeight: 'bold',
         color: '#C93D14',
         textAlign: 'center',
         marginBottom: hp('2.5%'),
-        fontFamily: FONTS.openSans.bold
+        fontFamily: FONTS.openSans.semiBold
     },
 
     inputContainer: {
@@ -155,7 +168,14 @@ const styles = StyleSheet.create({
 
     forgotPasswordText: {
         fontFamily: FONTS.openSans.semiBold,
-        color: '#FF7148',
+        color: 'black',
         fontSize: wp('3.2%')
-    }
+    },
+
+    backButton: {
+        position: 'absolute',
+        // top: hp('4%'),
+        left: wp('5%'),
+        zIndex: 10,
+    },
 });
