@@ -176,6 +176,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         // top: hp('4%'),
         left: wp('5%'),
+        top: hp('2%'),
         zIndex: 10,
     },
 });

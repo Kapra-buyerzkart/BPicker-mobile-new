@@ -12,8 +12,9 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import { FONTS } from '../styles/typography';
+import Ionicons from 'react-native-vector-icons/Ionicons'
 
-const LoginScreen = ({ navigation }) => {
+const ProfileScreen = ({ navigation }) => {
     const [showPassword, setShowPassword] = useState(false);
 
     return (
@@ -21,45 +22,74 @@ const LoginScreen = ({ navigation }) => {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.container}
         >
+            <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => navigation.goBack()}
+            >
+                <Icon name="arrow-left" size={wp('7%')} color="#fff" />
+            </TouchableOpacity>
+
             <ScrollView
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scroll}>
                 <View style={styles.card}>
-                    <Text style={styles.title}>BPicker</Text>
+                    <Text style={styles.title}>My Profile</Text>
 
                     {/* Mobile Number Input */}
                     <View style={styles.inputContainer}>
                         <TextInput
-                            placeholder="Mobile Number"
-                            placeholderTextColor="#999"
+                            placeholder="Test Picker"
+                            placeholderTextColor="black"
                             keyboardType="phone-pad"
                             maxLength={10}
                             style={styles.input}
+                            editable={false}
                         />
-                        <Icon name="cellphone" size={wp('5%')} color="#777" />
+                        <Ionicons name="person" size={wp('5%')} color="black" />
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                        <TextInput
+                            placeholder="testpicker@gmail.com"
+                            placeholderTextColor="black"
+                            keyboardType="phone-pad"
+                            maxLength={10}
+                            style={styles.input}
+                            editable={false}
+                        />
+                        <Ionicons name="mail" size={wp('5%')} color="black" />
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                        <TextInput
+                            placeholder="9605913522"
+                            placeholderTextColor="black"
+                            keyboardType="phone-pad"
+                            maxLength={10}
+                            style={styles.input}
+                            editable={false}
+                        />
+                        <Icon name="cellphone" size={wp('5%')} color="black" />
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                        <TextInput
+                            placeholder="Temp Store"
+                            placeholderTextColor="black"
+                            keyboardType="phone-pad"
+                            maxLength={10}
+                            style={styles.input}
+                            editable={false}
+                        />
+                        <Ionicons name="storefront" size={wp('5%')} color="black" />
                     </View>
 
                     {/* Password Input */}
-                    <View style={styles.inputContainer}>
-                        <TextInput
-                            placeholder="Password"
-                            placeholderTextColor="#999"
-                            secureTextEntry={!showPassword}
-                            style={styles.input}
-                        />
-                        <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                            <Icon
-                                name={'eye-outline'}
-                                size={wp('5%')}
-                                color={!showPassword ? "#777" : "#C93D14"}
-                            />
-                        </TouchableOpacity>
-                    </View>
 
                     {/* Login Button */}
-                    <TouchableOpacity onPress={() =>
-                        navigation.replace('Home')
+                    {/* <TouchableOpacity onPress={() =>
+                        navigation.replace('MainTabs')
                     } style={styles.button}>
                         <Text style={styles.buttonText}>LOGIN</Text>
                     </TouchableOpacity>
@@ -67,7 +97,7 @@ const LoginScreen = ({ navigation }) => {
                         navigation.navigate("ForgotPassword")
                     } style={styles.forgotPasswordButton}>
                         <Text style={styles.forgotPasswordText}>Forgot Password</Text>
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
 
                     {/* <Text style={styles.footerText}>Powered by Kapra</Text> */}
                 </View>
@@ -76,7 +106,7 @@ const LoginScreen = ({ navigation }) => {
     );
 };
 
-export default LoginScreen;
+export default ProfileScreen;
 
 const styles = StyleSheet.create({
     container: {
@@ -100,12 +130,12 @@ const styles = StyleSheet.create({
     },
 
     title: {
-        fontSize: wp('6%'),
+        fontSize: wp('5%'),
         // fontWeight: 'bold',
         color: '#C93D14',
         textAlign: 'center',
         marginBottom: hp('2.5%'),
-        fontFamily: FONTS.openSans.bold
+        fontFamily: FONTS.openSans.semiBold
     },
 
     inputContainer: {
@@ -157,5 +187,12 @@ const styles = StyleSheet.create({
         fontFamily: FONTS.openSans.semiBold,
         color: '#FF7148',
         fontSize: wp('3.2%')
-    }
+    },
+
+    backButton: {
+        position: 'absolute',
+        top: hp('2%'),
+        left: wp('5%'),
+        zIndex: 10,
+    },
 });

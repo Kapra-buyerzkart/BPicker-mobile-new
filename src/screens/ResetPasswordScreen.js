@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
 
     backButton: {
         position: 'absolute',
-        // top: hp('4%'),
+        top: hp('2%'),
         left: wp('5%'),
         zIndex: 10,
     },
