@@ -5,7 +5,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import { FONTS } from '../styles/typography';
 
-const SummaryCard = ({ color, icon, title, count, onPress, isActive, }) => (
+const SummaryCard = ({ color, icon, title, onPress, isActive, }) => (
     <TouchableOpacity
         style={[
             styles.summaryCard,
@@ -19,7 +19,6 @@ const SummaryCard = ({ color, icon, title, count, onPress, isActive, }) => (
         <View style={{
             alignItems: 'center'
         }}>
-            <Text style={styles.cardCount}>{count} {'order(s)'}</Text>
             <Text style={styles.cardTitle}>{title}</Text>
         </View>
     </TouchableOpacity>
@@ -42,16 +41,10 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: '#000',
     },
-    cardCount: {
-        fontSize: wp('3.7%'),
-        color: '#fff',
-        // marginTop: 6,
-        fontFamily: FONTS.openSans.semiBold
-    },
     cardTitle: {
         color: '#fff',
         // marginTop: 4,
-        fontSize: wp('3.2%'),
+        fontSize: wp('3.8%'),
         fontFamily: FONTS.openSans.semiBold
     },
 })

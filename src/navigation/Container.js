@@ -7,9 +7,7 @@ import HomeScreen from '../screens/HomeScreen';
 import PickingScreen from '../screens/PickingScreen';
 import PackedScreen from '../screens/PackedScreen';
 import DispatchedScreen from '../screens/DispatchedScreen';
-import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
-import ResetPasswordScreen from '../screens/ResetPasswordScreen';
-import OtpScreen from '../screens/OtpScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import OrderDetailsScreen from '../screens/OrderDetailsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
@@ -25,9 +23,7 @@ export default function App() {
             >
                 {/* Auth Screens */}
                 <Stack.Screen name="Login" component={LoginScreen} />
-                <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-                <Stack.Screen name="Otp" component={OtpScreen} />
-                <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+                <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
 
                 {/* App Screens */}
                 <Stack.Screen name="Home" component={HomeScreen} />

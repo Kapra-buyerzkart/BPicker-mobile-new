@@ -1,98 +1,198 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   FlatList,
+  ActivityIndicator,
+  Modal,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { FONTS } from '../styles/typography';
-import Ionicons from 'react-native-vector-icons/Ionicons'
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import SummaryCard from '../components/SummaryCard';
 import OrderCard from '../components/OrderCard';
+import { getOrders, updateOrderStatus } from '../services/ordersService';
+import { getStoredUser } from '../services/authService';
 
-const HomeScreen = ({ navigation }) => {
-  const [activeTab, setActiveTab] = useState('Today');
+const HomeScreen = ({ navigation, route }) => {
   const [selectedStatus, setSelectedStatus] = useState('Pending');
+  const [ordersData, setOrdersData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [storeName, setStoreName] = useState(route?.params?.storeName || '');
+  const [isStartConfirmVisible, setIsStartConfirmVisible] = useState(false);
+  const [isStartingOrder, setIsStartingOrder] = useState(false);
+  const [startOrderError, setStartOrderError] = useState('');
+  const [selectedOrderId, setSelectedOrderId] = useState(0);
+  const [selectedOrderNumber, setSelectedOrderNumber] = useState('');
+  const [statusCounts, setStatusCounts] = useState({
+    Pending: 0,
+    Picking: 0,
+    Packed: 0,
+  });
+  const hasFocusedOnce = useRef(false);
 
-  // const SummaryCard = ({ color, icon, title, count }) => (
-  //   <View style={[styles.summaryCard, { backgroundColor: color }]}>
-  //     <Icon name={icon} size={wp('7%')} color="#fff" />
-  //     <View style={{
-  //       alignItems: 'center'
-  //     }}>
-  //       <Text style={styles.cardCount}>{count} {'order(s)'}</Text>
-  //       <Text style={styles.cardTitle}>{title}</Text>
-  //     </View>
-  //   </View>
-  // );
+  const statusToApiValue = {
+    Pending: 'pending',
+    Picking: 'picking',
+    Packed: 'packed',
+  };
 
-  const ordersData = [
-    {
-      id: '1',
-      orderNumber: '#ORD5092848779',
-      orderDateTime: '23 Feb 2026, 12:46 pm',
-      orderType: 'slot',
-      slotTime: '7:00 pm',
-      amount: '405.98',
-      status: 'Pending',
-    },
-    {
-      id: '2',
-      orderNumber: '#ORD5092848776',
-      orderDateTime: '23 Feb 2026, 1:15 pm',
-      orderType: 'express',
-      amount: '520.00',
-      status: 'Picking',
-    },
-    {
-      id: '3',
-      orderNumber: '#ORD5092848777',
-      orderDateTime: '23 Feb 2026, 2:30 pm',
-      orderType: 'slot',
-      slotTime: '8:00 pm',
-      amount: '610.00',
-      status: 'Packed',
-    },
-    {
-      id: '4',
-      orderNumber: '#ORD5092848778',
-      orderDateTime: '23 Feb 2026, 2:30 pm',
-      orderType: 'slot',
-      slotTime: '8:00 pm',
-      amount: '610.00',
-      status: 'Packed',
-    },
-  ];
+  const loadOrders = async (statusLabel = selectedStatus, refresh = false) => {
+    if (refresh) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
 
-  const filteredOrders = ordersData.filter(
-    order => order.status === selectedStatus
+    try {
+      setErrorMessage('');
+      const orders = await getOrders(statusToApiValue[statusLabel]);
+      setOrdersData(orders);
+      setStatusCounts(prev => ({
+        ...prev,
+        [statusLabel]: orders.length,
+      }));
+    } catch (error) {
+      setErrorMessage(
+        error?.response?.data?.message ||
+        error?.message ||
+        'Unable to fetch orders.'
+      );
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    loadOrders(selectedStatus);
+  }, [selectedStatus]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasFocusedOnce.current) {
+        hasFocusedOnce.current = true;
+        return;
+      }
+      loadOrders(selectedStatus, true);
+    }, [selectedStatus])
   );
+
+  useEffect(() => {
+    const routeStoreName = route?.params?.storeName;
+    if (routeStoreName) {
+      setStoreName(routeStoreName);
+      return;
+    }
+
+    const loadStoreName = async () => {
+      const storedUser = await getStoredUser();
+      setStoreName(storedUser?.storeName || '');
+    };
+
+    loadStoreName();
+  }, [route?.params?.storeName]);
 
   const renderOrderItem = ({ item }) => {
     const slotText =
       item.orderType === 'slot' ? item.slotTime : 'Express';
+    const formattedDateTime = formatOrderDateTime(item.orderDateTime);
+    const openOrderDetails = (mode) => {
+      navigation.navigate('OrderDetails', {
+        orderId: item.orderId,
+        orderNumber: item.orderNumber,
+        mode,
+      });
+    };
+    const handleStartPress = () => {
+      if (selectedStatus === 'Pending') {
+        setSelectedOrderId(item.orderId);
+        setSelectedOrderNumber(item.orderNumber);
+        setStartOrderError('');
+        setIsStartConfirmVisible(true);
+        return;
+      }
+      if (selectedStatus === 'Picking') {
+        openOrderDetails('edit');
+        return;
+      }
+      openOrderDetails('view');
+    };
 
     return (
       <OrderCard
         orderId={item.orderNumber}
-        date={item.orderDateTime}
+        date={formattedDateTime}
         slot={slotText}
         amount={item.amount}
-        onPress={() => navigation.navigate('OrderDetails')}
-        onStartPress={() => navigation.navigate('OrderDetails')}
+        onPress={() => openOrderDetails(selectedStatus === 'Packed' ? 'view' : 'edit')}
+        onStartPress={handleStartPress}
         selectedStatus={selectedStatus}
       />
     );
   };
 
+  const formatOrderDateTime = (dateValue) => {
+    if (!dateValue) {
+      return '-';
+    }
+
+    const parsedDate = new Date(dateValue);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return dateValue;
+    }
+
+    const day = String(parsedDate.getDate()).padStart(2, '0');
+    const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+    const year = parsedDate.getFullYear();
+    const rawHours = parsedDate.getHours();
+    const period = rawHours >= 12 ? 'PM' : 'AM';
+    const hours12 = rawHours % 12 || 12;
+    const hours = String(hours12).padStart(2, '0');
+    const minutes = String(parsedDate.getMinutes()).padStart(2, '0');
+
+    return `${day}-${month}-${year} ${hours}:${minutes} ${period}`;
+  };
+
   const getOrderCountByStatus = (status) => {
-    return ordersData.filter(order => order.status === status).length;
+    return statusCounts[status] ?? 0;
+  };
+
+  const handleConfirmStartPicking = async () => {
+    if (!selectedOrderId) {
+      setStartOrderError('Invalid order selected.');
+      return;
+    }
+
+    try {
+      setStartOrderError('');
+      setIsStartingOrder(true);
+      await updateOrderStatus({
+        orderId: selectedOrderId,
+        eventKey: 'PICKING_STARTED',
+      });
+      setIsStartConfirmVisible(false);
+      navigation.navigate('OrderDetails', {
+        orderId: selectedOrderId,
+        orderNumber: selectedOrderNumber,
+        mode: 'edit',
+      });
+    } catch (error) {
+      setStartOrderError(
+        error?.response?.data?.message ||
+        error?.message ||
+        'Unable to start picking for this order.'
+      );
+    } finally {
+      setIsStartingOrder(false);
+    }
   };
 
   return (
@@ -108,12 +208,12 @@ const HomeScreen = ({ navigation }) => {
           marginBottom: hp('1.5%'),
           paddingHorizontal: wp('2%')
         }}>
-          <Text style={styles.storeText}>Store : Vennala Store</Text>
+          <Text style={styles.storeText}>Store : {storeName || '-'}</Text>
           <View style={{
             flexDirection: 'row',
             alignItems: 'center'
           }}>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => loadOrders(selectedStatus, true)}>
               <FontAwesome name={'refresh'} size={wp('6%')} color="black" />
             </TouchableOpacity>
 
@@ -128,29 +228,6 @@ const HomeScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
         </View>
-        {/* Tabs */}
-        {/* <View style={styles.tabRow}>
-          {['Today', 'Yesterday', 'Last 7 Days'].map(tab => (
-            <TouchableOpacity
-              key={tab}
-              onPress={() => setActiveTab(tab)}
-              style={[
-                styles.tab,
-                activeTab === tab && styles.activeTab,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.tabText,
-                  activeTab === tab && styles.activeTabText,
-                ]}
-              >
-                {tab}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View> */}
-
         {/* Summary Cards */}
         <View style={styles.cardGrid}>
           <SummaryCard
@@ -199,20 +276,81 @@ const HomeScreen = ({ navigation }) => {
 
         {/* Total */}
         <View style={styles.totalCard}>
-          <Text style={styles.totalText}>TOTAL : 1 order(s)</Text>
+          <Text style={styles.totalText}>
+            Total {selectedStatus} Orders : {ordersData.length}
+          </Text>
         </View>
 
-        <FlatList
-          data={filteredOrders}
-          keyExtractor={(item) => item.id}
-          renderItem={renderOrderItem}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>No orders found</Text>
-          }
-          contentContainerStyle={{ paddingBottom: hp('3%') }}
-        />
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#C93D14" />
+            <Text style={styles.loadingText}>Loading orders...</Text>
+          </View>
+        ) : (
+          <>
+            {!!errorMessage && (
+              <View style={styles.errorCard}>
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              </View>
+            )}
+
+            <FlatList
+              data={ordersData}
+              keyExtractor={(item) => item.id}
+              renderItem={renderOrderItem}
+              showsVerticalScrollIndicator={false}
+              refreshing={isRefreshing}
+              onRefresh={() => loadOrders(selectedStatus, true)}
+              ListEmptyComponent={
+                <Text style={styles.emptyText}>No orders found</Text>
+              }
+              contentContainerStyle={{ paddingBottom: hp('3%') }}
+            />
+          </>
+        )}
       </View>
+      <Modal
+        visible={isStartConfirmVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsStartConfirmVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Confirm Start Picking</Text>
+            <Text style={styles.modalText}>
+              Start picking for order {selectedOrderNumber}?
+            </Text>
+            {!!startOrderError && (
+              <Text style={styles.modalErrorText}>{startOrderError}</Text>
+            )}
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => {
+                  if (!isStartingOrder) {
+                    setIsStartConfirmVisible(false);
+                  }
+                }}
+                disabled={isStartingOrder}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalOkButton}
+                onPress={handleConfirmStartPicking}
+                disabled={isStartingOrder}
+              >
+                {isStartingOrder ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.modalOkText}>OK</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -233,33 +371,6 @@ const styles = StyleSheet.create({
     fontSize: wp('4%'),
     // marginBottom: hp('1.5%'),
     fontFamily: FONTS.openSans.semiBold
-  },
-
-  tabRow: {
-    flexDirection: 'row',
-    marginBottom: hp('2%'),
-    justifyContent: "space-around"
-  },
-
-  tab: {
-    // marginRight: wp('5%'),
-    paddingBottom: hp('0.1%'),
-  },
-
-  activeTab: {
-    borderBottomWidth: 2,
-    borderColor: '#C93D14',
-  },
-
-  tabText: {
-    fontSize: wp('3.5%'),
-    color: '#999',
-    fontFamily: FONTS.openSans.semiBold
-  },
-
-  activeTabText: {
-    color: '#000',
-    fontWeight: '600',
   },
 
   cardGrid: {
@@ -360,6 +471,91 @@ const styles = StyleSheet.create({
     marginTop: hp('5%'),
     fontSize: wp('4%'),
     color: '#888',
+    fontFamily: FONTS.openSans.semiBold,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    marginTop: hp('6%'),
+  },
+  loadingText: {
+    marginTop: hp('1%'),
+    color: '#666',
+    fontFamily: FONTS.openSans.semiBold,
+  },
+  errorCard: {
+    backgroundColor: '#FDECEC',
+    borderColor: '#F5C2C0',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: wp('3%'),
+    marginBottom: hp('1.2%'),
+  },
+  errorText: {
+    color: '#A94442',
+    fontFamily: FONTS.openSans.semiBold,
+    fontSize: wp('3.2%'),
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: wp('8%'),
+  },
+  modalCard: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: wp('5%'),
+  },
+  modalTitle: {
+    textAlign: 'center',
+    color: '#1A1A1A',
+    fontFamily: FONTS.openSans.semiBold,
+    fontSize: wp('4.2%'),
+    marginBottom: hp('1%'),
+  },
+  modalText: {
+    textAlign: 'center',
+    color: '#333',
+    fontFamily: FONTS.openSans.regular,
+    fontSize: wp('3.6%'),
+    marginBottom: hp('2%'),
+  },
+  modalErrorText: {
+    color: '#D32F2F',
+    textAlign: 'center',
+    fontFamily: FONTS.openSans.semiBold,
+    marginBottom: hp('1%'),
+    fontSize: wp('3.2%'),
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalCancelButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#C93D14',
+    borderRadius: 8,
+    paddingVertical: hp('1.2%'),
+    marginRight: wp('2%'),
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    color: '#C93D14',
+    fontFamily: FONTS.openSans.semiBold,
+  },
+  modalOkButton: {
+    flex: 1,
+    backgroundColor: '#C93D14',
+    borderRadius: 8,
+    paddingVertical: hp('1.2%'),
+    marginLeft: wp('2%'),
+    alignItems: 'center',
+  },
+  modalOkText: {
+    color: '#fff',
     fontFamily: FONTS.openSans.semiBold,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -8,20 +8,91 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import { FONTS } from '../styles/typography';
-import Ionicons from 'react-native-vector-icons/Ionicons'
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { getPickerProfile, logoutPickerAgent } from '../services/authService';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ProfileScreen = ({ navigation }) => {
-    const [showPassword, setShowPassword] = useState(false);
+    const [isProfileLoading, setIsProfileLoading] = useState(true);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [profile, setProfile] = useState({
+        fullName: '',
+        emailId: '',
+        phoneNo: '',
+        storeName: '',
+    });
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const loadProfile = async () => {
+            try {
+                setErrorMessage('');
+                setIsProfileLoading(true);
+                const profileData = await getPickerProfile();
+
+                if (isMounted) {
+                    setProfile(profileData);
+                }
+            } catch (error) {
+                if (isMounted) {
+                    setErrorMessage(
+                        error?.response?.data?.message ||
+                        error?.message ||
+                        'Unable to fetch profile.'
+                    );
+                }
+            } finally {
+                if (isMounted) {
+                    setIsProfileLoading(false);
+                }
+            }
+        };
+
+        loadProfile();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    const handleLogout = async () => {
+        try {
+            setErrorMessage('');
+            setIsLoggingOut(true);
+            await logoutPickerAgent();
+
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+            });
+        } catch (error) {
+            setErrorMessage(
+                error?.response?.data?.message ||
+                error?.message ||
+                'Unable to logout. Please try again.'
+            );
+        } finally {
+            setIsLoggingOut(false);
+        }
+    };
+
+    const handleChangePassword = () => {
+        navigation.navigate('ChangePassword');
+    };
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.container}
-        >
+        <SafeAreaView style={styles.container} edges={['top']}>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={styles.container}
+            >
             <TouchableOpacity
                 style={styles.backButton}
                 onPress={() => navigation.goBack()}
@@ -36,13 +107,21 @@ const ProfileScreen = ({ navigation }) => {
                 <View style={styles.card}>
                     <Text style={styles.title}>My Profile</Text>
 
+                    {isProfileLoading ? (
+                        <View style={styles.profileLoader}>
+                            <ActivityIndicator size="large" color="#C93D14" />
+                            <Text style={styles.loadingText}>Loading profile...</Text>
+                        </View>
+                    ) : (
+                        <>
+
                     {/* Mobile Number Input */}
                     <View style={styles.inputContainer}>
                         <TextInput
-                            placeholder="Test Picker"
+                            placeholder="-"
                             placeholderTextColor="black"
                             keyboardType="phone-pad"
-                            maxLength={10}
+                            value={profile.fullName}
                             style={styles.input}
                             editable={false}
                         />
@@ -51,10 +130,10 @@ const ProfileScreen = ({ navigation }) => {
 
                     <View style={styles.inputContainer}>
                         <TextInput
-                            placeholder="testpicker@gmail.com"
+                            placeholder="-"
                             placeholderTextColor="black"
                             keyboardType="phone-pad"
-                            maxLength={10}
+                            value={profile.emailId}
                             style={styles.input}
                             editable={false}
                         />
@@ -63,10 +142,11 @@ const ProfileScreen = ({ navigation }) => {
 
                     <View style={styles.inputContainer}>
                         <TextInput
-                            placeholder="9605913522"
+                            placeholder="-"
                             placeholderTextColor="black"
                             keyboardType="phone-pad"
                             maxLength={10}
+                            value={profile.phoneNo}
                             style={styles.input}
                             editable={false}
                         />
@@ -75,34 +155,47 @@ const ProfileScreen = ({ navigation }) => {
 
                     <View style={styles.inputContainer}>
                         <TextInput
-                            placeholder="Temp Store"
+                            placeholder="-"
                             placeholderTextColor="black"
                             keyboardType="phone-pad"
-                            maxLength={10}
+                            value={profile.storeName}
                             style={styles.input}
                             editable={false}
                         />
                         <Ionicons name="storefront" size={wp('5%')} color="black" />
                     </View>
+                        </>
+                    )}
 
                     {/* Password Input */}
 
                     {/* Login Button */}
-                    {/* <TouchableOpacity onPress={() =>
-                        navigation.replace('MainTabs')
-                    } style={styles.button}>
-                        <Text style={styles.buttonText}>LOGIN</Text>
+                    {!!errorMessage && (
+                        <Text style={styles.errorText}>{errorMessage}</Text>
+                    )}
+                    <TouchableOpacity
+                        onPress={handleChangePassword}
+                        style={styles.secondaryButton}
+                    >
+                        <Text style={styles.secondaryButtonText}>CHANGE PASSWORD</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() =>
-                        navigation.navigate("ForgotPassword")
-                    } style={styles.forgotPasswordButton}>
-                        <Text style={styles.forgotPasswordText}>Forgot Password</Text>
-                    </TouchableOpacity> */}
+                    <TouchableOpacity
+                        onPress={handleLogout}
+                        style={styles.button}
+                        disabled={isLoggingOut}
+                    >
+                        {isLoggingOut ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.buttonText}>LOGOUT</Text>
+                        )}
+                    </TouchableOpacity>
 
                     {/* <Text style={styles.footerText}>Powered by Kapra</Text> */}
                 </View>
             </ScrollView>
-        </KeyboardAvoidingView>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 };
 
@@ -170,6 +263,37 @@ const styles = StyleSheet.create({
         fontSize: wp('4%'),
         fontFamily: FONTS.openSans.semiBold
     },
+    secondaryButton: {
+        backgroundColor: '#fff',
+        height: hp('6.5%'),
+        borderRadius: wp('2%'),
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: hp('1%'),
+        borderWidth: 1,
+        borderColor: '#C93D14',
+    },
+    secondaryButtonText: {
+        color: '#C93D14',
+        fontSize: wp('4%'),
+        fontFamily: FONTS.openSans.semiBold
+    },
+    errorText: {
+        color: '#D32F2F',
+        fontFamily: FONTS.openSans.semiBold,
+        fontSize: wp('3.2%'),
+        marginBottom: hp('1%'),
+    },
+    profileLoader: {
+        alignItems: 'center',
+        marginBottom: hp('2%'),
+    },
+    loadingText: {
+        marginTop: hp('1%'),
+        color: '#666',
+        fontFamily: FONTS.openSans.semiBold,
+        fontSize: wp('3.4%'),
+    },
 
     footerText: {
         marginTop: hp('3%'),
@@ -178,20 +302,9 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
 
-    forgotPasswordButton: {
-        alignSelf: 'flex-end',
-        marginTop: 8
-    },
-
-    forgotPasswordText: {
-        fontFamily: FONTS.openSans.semiBold,
-        color: '#FF7148',
-        fontSize: wp('3.2%')
-    },
-
     backButton: {
         position: 'absolute',
-        top: hp('2%'),
+        top: hp('1%'),
         left: wp('5%'),
         zIndex: 10,
     },

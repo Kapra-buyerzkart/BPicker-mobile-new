@@ -17,6 +17,10 @@ const OrderCard = ({
     onStartPress,
     selectedStatus
 }) => {
+    const formattedAmount = Number.isFinite(Number(amount))
+        ? Number(amount).toFixed(2)
+        : '0.00';
+
     return (
         <TouchableOpacity onPress={onPress} style={selectedStatus === "Pending" ? styles.orderCard : selectedStatus === "Picking" ? [styles.orderCard, {
             backgroundColor: "#f4ab35"
@@ -30,7 +34,7 @@ const OrderCard = ({
             </View>
 
             <View style={styles.orderRight}>
-                <Text style={styles.amount}>₹ {amount}</Text>
+                <Text style={styles.amount}>₹ {formattedAmount}</Text>
                 <TouchableOpacity
                     onPress={onStartPress}
                     style={styles.startBtn}

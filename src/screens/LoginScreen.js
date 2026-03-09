@@ -8,13 +8,56 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import { FONTS } from '../styles/typography';
+import { loginPickerAgent } from '../services/authService';
 
 const LoginScreen = ({ navigation }) => {
     const [showPassword, setShowPassword] = useState(false);
+    const [phone, setPhone] = useState('');
+    const [password, setPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+
+    const handleLogin = async () => {
+        const trimmedPhone = phone.trim();
+        const trimmedPassword = password.trim();
+
+        if (!trimmedPhone || trimmedPhone.length !== 10) {
+            setErrorMessage('Enter a valid 10 digit mobile number.');
+            return;
+        }
+
+        if (!trimmedPassword) {
+            setErrorMessage('Password is required.');
+            return;
+        }
+
+        try {
+            setErrorMessage('');
+            setIsLoading(true);
+
+            const loginResponse = await loginPickerAgent({
+                phone: trimmedPhone,
+                password: trimmedPassword,
+            });
+
+            navigation.replace('Home', {
+                storeName: loginResponse?.data?.storeName || '',
+            });
+        } catch (error) {
+            setErrorMessage(
+                error?.response?.data?.message ||
+                error?.message ||
+                'Login failed. Please try again.'
+            );
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <KeyboardAvoidingView
@@ -35,6 +78,8 @@ const LoginScreen = ({ navigation }) => {
                             placeholderTextColor="#999"
                             keyboardType="phone-pad"
                             maxLength={10}
+                            value={phone}
+                            onChangeText={(text) => setPhone(text.replace(/\D/g, ''))}
                             style={styles.input}
                         />
                         <Icon name="cellphone" size={wp('5%')} color="#777" />
@@ -46,6 +91,8 @@ const LoginScreen = ({ navigation }) => {
                             placeholder="Password"
                             placeholderTextColor="#999"
                             secureTextEntry={!showPassword}
+                            value={password}
+                            onChangeText={setPassword}
                             style={styles.input}
                         />
                         <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
@@ -58,15 +105,19 @@ const LoginScreen = ({ navigation }) => {
                     </View>
 
                     {/* Login Button */}
-                    <TouchableOpacity onPress={() =>
-                        navigation.replace('Home')
-                    } style={styles.button}>
-                        <Text style={styles.buttonText}>LOGIN</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() =>
-                        navigation.navigate("ForgotPassword")
-                    } style={styles.forgotPasswordButton}>
-                        <Text style={styles.forgotPasswordText}>Forgot Password</Text>
+                    {!!errorMessage && (
+                        <Text style={styles.errorText}>{errorMessage}</Text>
+                    )}
+                    <TouchableOpacity
+                        onPress={handleLogin}
+                        style={styles.button}
+                        disabled={isLoading}
+                    >
+                        {isLoading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.buttonText}>LOGIN</Text>
+                        )}
                     </TouchableOpacity>
 
                     {/* <Text style={styles.footerText}>Powered by Kapra</Text> */}
@@ -140,6 +191,12 @@ const styles = StyleSheet.create({
         fontSize: wp('4%'),
         fontFamily: FONTS.openSans.semiBold
     },
+    errorText: {
+        color: '#D32F2F',
+        fontFamily: FONTS.openSans.semiBold,
+        fontSize: wp('3.2%'),
+        marginBottom: hp('1%'),
+    },
 
     footerText: {
         marginTop: hp('3%'),
@@ -148,14 +205,4 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
 
-    forgotPasswordButton: {
-        alignSelf: 'flex-end',
-        marginTop: 8
-    },
-
-    forgotPasswordText: {
-        fontFamily: FONTS.openSans.semiBold,
-        color: '#FF7148',
-        fontSize: wp('3.2%')
-    }
 });
