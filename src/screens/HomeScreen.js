@@ -196,7 +196,7 @@ const HomeScreen = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <View
         style={styles.container}
       // showsVerticalScrollIndicator={false}
@@ -304,7 +304,8 @@ const HomeScreen = ({ navigation, route }) => {
               ListEmptyComponent={
                 <Text style={styles.emptyText}>No orders found</Text>
               }
-              contentContainerStyle={{ paddingBottom: hp('3%') }}
+              style={styles.list}
+              contentContainerStyle={{ paddingBottom: 0 }}
             />
           </>
         )}
@@ -364,7 +365,14 @@ const styles = StyleSheet.create({
   },
 
   container: {
-    padding: wp('4%'),
+    flex: 1,
+    paddingHorizontal: wp('4%'),
+    paddingTop: wp('4%'),
+    paddingBottom: 0,
+  },
+
+  list: {
+    flex: 1,
   },
 
   storeText: {

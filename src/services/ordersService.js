@@ -1,9 +1,34 @@
 import httpClient from './httpClient';
+import { API_CONFIG } from '../config/api';
 
 const STATUS_LABELS = {
   pending: 'Pending',
   picking: 'Picking',
   packed: 'Packed',
+};
+
+const resolveImageUrl = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = String(value).trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  const base = String(API_CONFIG.IMAGE_BASE_URL || '').trim();
+  if (!base) {
+    return trimmed;
+  }
+
+  const normalizedBase = base.endsWith('/') ? base : `${base}/`;
+  const normalizedPath = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
+  return `${normalizedBase}${normalizedPath}`;
 };
 
 const normalizeOrder = (order, index, fallbackStatus) => ({
@@ -63,10 +88,13 @@ const normalizeOrderItem = (item, index) => ({
   qty: String(item.qty ?? item.quantity ?? 1),
   price: Number(item.price ?? item.rate ?? item.unitPrice ?? item.lineTotal ?? 0),
   image:
-    item.image ??
-    item.imageUrl ??
-    item.productImage ??
-    'https://via.placeholder.com/100',
+    resolveImageUrl(
+      item.featuredImage ??
+      item.featured_image ??
+      item.image ??
+      item.imageUrl ??
+      item.productImage
+    ) ?? 'https://via.placeholder.com/100',
   category:
     item.category ??
     item.categoryName ??

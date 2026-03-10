@@ -45,8 +45,6 @@ httpClient.interceptors.request.use(
     const url = config.url || '';
     const method = (config.method || 'GET').toUpperCase();
     const fullURL = `${baseURL}${url}`;
-
-    console.log(`[API] ${method} ${fullURL}`);
     return config;
   },
   (error) => Promise.reject(error)
