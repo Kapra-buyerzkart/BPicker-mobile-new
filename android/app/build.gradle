@@ -52,6 +52,10 @@ react {
 
     /* Autolinking */
     autolinkLibrariesWithApp()
+
+    // RN New Architecture still initializes Hermes runtime classes; disable .so cleanup so we don't
+    // strip Hermes libs when hermesEnabled=false (we include them explicitly in dependencies below).
+    enableSoCleanup = false
 }
 
 /**
@@ -110,9 +114,11 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+    // Always include Hermes native libs. This prevents startup crashes when the runtime loads Hermes
+    // classes but packaging cleanup excludes the corresponding .so files.
+    implementation("com.facebook.react:hermes-android")
 
     if (hermesEnabled.toBoolean()) {
-        implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor
     }

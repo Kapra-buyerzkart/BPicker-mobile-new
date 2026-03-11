@@ -132,7 +132,6 @@ const HomeScreen = ({ navigation, route }) => {
         date={formattedDateTime}
         slot={slotText}
         amount={item.amount}
-        onPress={() => openOrderDetails(selectedStatus === 'Packed' ? 'view' : 'edit')}
         onStartPress={handleStartPress}
         selectedStatus={selectedStatus}
       />

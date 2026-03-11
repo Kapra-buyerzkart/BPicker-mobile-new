@@ -120,6 +120,10 @@ const LoginScreen = ({ navigation }) => {
                         )}
                     </TouchableOpacity>
 
+                    <Text style={styles.forgotPasswordText}>
+                        If you forgot your password, contact your system administrator.
+                    </Text>
+
                     {/* <Text style={styles.footerText}>Powered by Kapra</Text> */}
                 </View>
             </ScrollView>
@@ -203,6 +207,14 @@ const styles = StyleSheet.create({
         fontSize: wp('3%'),
         color: '#aaa',
         textAlign: 'center',
+    },
+
+    forgotPasswordText: {
+        marginTop: hp('1.5%'),
+        fontSize: wp('3.1%'),
+        color: '#F57C00',
+        textAlign: 'center',
+        fontFamily: FONTS.openSans.regular,
     },
 
 });

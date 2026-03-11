@@ -13,7 +13,6 @@ const OrderCard = ({
     date,
     slot,
     amount,
-    onPress,
     onStartPress,
     selectedStatus
 }) => {
@@ -21,13 +20,15 @@ const OrderCard = ({
         ? Number(amount).toFixed(2)
         : '0.00';
 
+    const cardStyle = [
+        styles.orderCard,
+        selectedStatus === 'Picking' && styles.orderCardPicking,
+        selectedStatus !== 'Pending' && selectedStatus !== 'Picking' && styles.orderCardView,
+    ];
+
     return (
-        <TouchableOpacity onPress={onPress} style={selectedStatus === "Pending" ? styles.orderCard : selectedStatus === "Picking" ? [styles.orderCard, {
-            backgroundColor: "#f4ab35"
-        }] : [styles.orderCard, {
-            backgroundColor: '#4A90E2'
-        }]} activeOpacity={0.9}>
-            <View style={{ flex: 1 }}>
+        <View style={cardStyle}>
+            <View style={styles.orderLeft}>
                 <Text style={styles.orderId}>{orderId}</Text>
                 <Text style={styles.orderMeta}>Placed on : {date}</Text>
                 <Text style={styles.orderMeta}>Slot : {slot}</Text>
@@ -43,7 +44,7 @@ const OrderCard = ({
                     <Text style={styles.startText}>{selectedStatus === "Pending" ? "START" : selectedStatus === "Picking" ? "CONTINUE" : "VIEW"}</Text>
                 </TouchableOpacity>
             </View>
-        </TouchableOpacity>
+        </View>
     );
 };
 
@@ -57,6 +58,15 @@ const styles = StyleSheet.create({
         padding: wp('4%'),
         alignItems: 'center',
         marginBottom: hp('1.2%'),
+    },
+    orderCardPicking: {
+        backgroundColor: "#f4ab35"
+    },
+    orderCardView: {
+        backgroundColor: '#4A90E2'
+    },
+    orderLeft: {
+        flex: 1
     },
 
     orderId: {

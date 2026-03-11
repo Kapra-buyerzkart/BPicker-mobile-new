@@ -4,6 +4,8 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
+    Modal,
+    Pressable,
     StyleSheet,
     KeyboardAvoidingView,
     Platform,
@@ -21,6 +23,7 @@ const ProfileScreen = ({ navigation }) => {
     const [isProfileLoading, setIsProfileLoading] = useState(true);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
     const [profile, setProfile] = useState({
         fullName: '',
         emailId: '',
@@ -81,6 +84,14 @@ const ProfileScreen = ({ navigation }) => {
         } finally {
             setIsLoggingOut(false);
         }
+    };
+
+    const handleLogoutPress = () => {
+        if (isLoggingOut) {
+            return;
+        }
+
+        setIsLogoutModalVisible(true);
     };
 
     const handleChangePassword = () => {
@@ -180,7 +191,7 @@ const ProfileScreen = ({ navigation }) => {
                         <Text style={styles.secondaryButtonText}>CHANGE PASSWORD</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        onPress={handleLogout}
+                        onPress={handleLogoutPress}
                         style={styles.button}
                         disabled={isLoggingOut}
                     >
@@ -194,6 +205,50 @@ const ProfileScreen = ({ navigation }) => {
                     {/* <Text style={styles.footerText}>Powered by Kapra</Text> */}
                 </View>
             </ScrollView>
+
+            <Modal
+                visible={isLogoutModalVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setIsLogoutModalVisible(false)}
+            >
+                <Pressable
+                    style={styles.modalBackdrop}
+                    onPress={() => setIsLogoutModalVisible(false)}
+                >
+                    <Pressable style={styles.modalCard} onPress={() => {}}>
+                        <Text style={styles.modalTitle}>Confirm Logout</Text>
+                        <Text style={styles.modalMessage}>
+                            Are you sure you want to logout?
+                        </Text>
+
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity
+                                style={styles.modalCancelButton}
+                                onPress={() => setIsLogoutModalVisible(false)}
+                                disabled={isLoggingOut}
+                            >
+                                <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.modalLogoutButton}
+                                onPress={async () => {
+                                    setIsLogoutModalVisible(false);
+                                    await handleLogout();
+                                }}
+                                disabled={isLoggingOut}
+                            >
+                                {isLoggingOut ? (
+                                    <ActivityIndicator color="#fff" />
+                                ) : (
+                                    <Text style={styles.modalLogoutButtonText}>Logout</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </Pressable>
+                </Pressable>
+            </Modal>
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
@@ -307,5 +362,64 @@ const styles = StyleSheet.create({
         top: hp('1%'),
         left: wp('5%'),
         zIndex: 10,
+    },
+
+    modalBackdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        justifyContent: 'center',
+        padding: wp('6%'),
+    },
+    modalCard: {
+        backgroundColor: '#fff',
+        borderRadius: wp('3%'),
+        padding: wp('6%'),
+        elevation: 6,
+    },
+    modalTitle: {
+        fontSize: wp('4.5%'),
+        color: '#111',
+        textAlign: 'center',
+        marginBottom: hp('1%'),
+        fontFamily: FONTS.openSans.semiBold,
+    },
+    modalMessage: {
+        fontSize: wp('3.6%'),
+        color: '#444',
+        textAlign: 'center',
+        marginBottom: hp('2%'),
+        fontFamily: FONTS.openSans.regular,
+    },
+    modalActions: {
+        flexDirection: 'row',
+        gap: wp('3%'),
+    },
+    modalCancelButton: {
+        flex: 1,
+        backgroundColor: '#fff',
+        height: hp('5.8%'),
+        borderRadius: wp('2%'),
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#C93D14',
+    },
+    modalCancelButtonText: {
+        color: '#C93D14',
+        fontSize: wp('3.8%'),
+        fontFamily: FONTS.openSans.semiBold,
+    },
+    modalLogoutButton: {
+        flex: 1,
+        backgroundColor: '#C93D14',
+        height: hp('5.8%'),
+        borderRadius: wp('2%'),
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalLogoutButtonText: {
+        color: '#fff',
+        fontSize: wp('3.8%'),
+        fontFamily: FONTS.openSans.semiBold,
     },
 });
