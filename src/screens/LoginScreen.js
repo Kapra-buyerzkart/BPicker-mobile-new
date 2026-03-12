@@ -14,6 +14,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import { FONTS } from '../styles/typography';
 import { loginPickerAgent } from '../services/authService';
+import { oneSignalLogin, requestPushPermissionIfNeeded } from '../services/oneSignalService';
 
 const LoginScreen = ({ navigation }) => {
     const [showPassword, setShowPassword] = useState(false);
@@ -45,8 +46,34 @@ const LoginScreen = ({ navigation }) => {
                 password: trimmedPassword,
             });
 
+            const loginData = loginResponse?.data || {};
+            const tags = {
+                custId: loginData?.custId != null ? String(loginData.custId) : '',
+                storeId: loginData?.storeId != null ? String(loginData.storeId) : '',
+                storeName: String(loginData?.storeName || ''),
+                phone: String(loginData?.phone || trimmedPhone),
+                pickerAgentName: String(loginData?.pickerAgentName || ''),
+                agentStatus: String(loginData?.agentStatus || ''),
+            };
+            const nonEmptyTags = Object.fromEntries(
+                Object.entries(tags).filter(([, value]) => String(value).trim().length > 0)
+            );
+            const pickerAgentId = loginData?.pickerAgentId;
+            const custId = loginData?.custId;
+            const phoneValue = String(loginData?.phone || trimmedPhone).trim();
+            const externalId =
+                pickerAgentId != null && String(pickerAgentId).trim().length > 0
+                    ? `cust-${custId != null ? String(custId).trim() : 'na'}-pickerAgent-${String(pickerAgentId).trim()}`
+                    : `phone-${phoneValue}`;
+
+            oneSignalLogin({
+                externalId,
+                tags: Object.keys(nonEmptyTags).length > 0 ? nonEmptyTags : undefined,
+            });
+            requestPushPermissionIfNeeded();
+
             navigation.replace('Home', {
-                storeName: loginResponse?.data?.storeName || '',
+                storeName: loginData?.storeName || '',
             });
         } catch (error) {
             setErrorMessage(

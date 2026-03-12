@@ -18,6 +18,7 @@ import { FONTS } from '../styles/typography';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getPickerProfile, logoutPickerAgent } from '../services/authService';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { oneSignalLogout } from '../services/oneSignalService';
 
 const ProfileScreen = ({ navigation }) => {
     const [isProfileLoading, setIsProfileLoading] = useState(true);
@@ -70,6 +71,7 @@ const ProfileScreen = ({ navigation }) => {
             setErrorMessage('');
             setIsLoggingOut(true);
             await logoutPickerAgent();
+            oneSignalLogout();
 
             navigation.reset({
                 index: 0,

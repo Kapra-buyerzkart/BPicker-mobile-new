@@ -18,6 +18,11 @@ import SummaryCard from '../components/SummaryCard';
 import OrderCard from '../components/OrderCard';
 import { getOrders, updateOrderStatus } from '../services/ordersService';
 import { getStoredUser } from '../services/authService';
+import BadgeIcon from '../components/BadgeIcon';
+import {
+  clearNotificationBadgeCount,
+  subscribeNotificationBadgeCount,
+} from '../services/oneSignalService';
 
 const HomeScreen = ({ navigation, route }) => {
   const [selectedStatus, setSelectedStatus] = useState('Pending');
@@ -29,6 +34,7 @@ const HomeScreen = ({ navigation, route }) => {
   const [isStartConfirmVisible, setIsStartConfirmVisible] = useState(false);
   const [isStartingOrder, setIsStartingOrder] = useState(false);
   const [startOrderError, setStartOrderError] = useState('');
+  const [notificationBadgeCount, setNotificationBadgeCount] = useState(0);
   const [selectedOrderId, setSelectedOrderId] = useState(0);
   const [selectedOrderNumber, setSelectedOrderNumber] = useState('');
   const [statusCounts, setStatusCounts] = useState({
@@ -74,6 +80,11 @@ const HomeScreen = ({ navigation, route }) => {
   useEffect(() => {
     loadOrders(selectedStatus);
   }, [selectedStatus]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeNotificationBadgeCount(setNotificationBadgeCount);
+    return unsubscribe;
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -214,6 +225,17 @@ const HomeScreen = ({ navigation, route }) => {
           }}>
             <TouchableOpacity onPress={() => loadOrders(selectedStatus, true)}>
               <FontAwesome name={'refresh'} size={wp('6%')} color="black" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => clearNotificationBadgeCount()}
+              style={{
+                marginLeft: wp('5%')
+              }}
+            >
+              <BadgeIcon count={notificationBadgeCount}>
+                <Ionicons name={'notifications-outline'} size={wp('6%')} color="black" />
+              </BadgeIcon>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={{

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "493387038255",
+    "project_id": "bpikcer-one-signal",
+    "storage_bucket": "bpikcer-one-signal.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:493387038255:android:6db72d2f1c4810dbe410da",
+        "android_client_info": {
+          "package_name": "com.bpicker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1frHbGWz1_oVTwJkCIcUUNx0fmslDBRY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
