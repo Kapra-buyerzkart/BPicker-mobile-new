@@ -212,11 +212,13 @@ const ProfileScreen = ({ navigation }) => {
                 animationType="fade"
                 onRequestClose={() => setIsLogoutModalVisible(false)}
             >
-                <Pressable
-                    style={styles.modalBackdrop}
-                    onPress={() => setIsLogoutModalVisible(false)}
-                >
-                    <Pressable style={styles.modalCard} onPress={() => {}}>
+                <View style={styles.modalBackdrop}>
+                    <Pressable
+                        style={styles.modalDismissArea}
+                        onPress={() => setIsLogoutModalVisible(false)}
+                    />
+
+                    <View style={styles.modalCard}>
                         <Text style={styles.modalTitle}>Confirm Logout</Text>
                         <Text style={styles.modalMessage}>
                             Are you sure you want to logout?
@@ -233,9 +235,9 @@ const ProfileScreen = ({ navigation }) => {
 
                             <TouchableOpacity
                                 style={styles.modalLogoutButton}
-                                onPress={async () => {
+                                onPress={() => {
                                     setIsLogoutModalVisible(false);
-                                    await handleLogout();
+                                    handleLogout();
                                 }}
                                 disabled={isLoggingOut}
                             >
@@ -246,8 +248,8 @@ const ProfileScreen = ({ navigation }) => {
                                 )}
                             </TouchableOpacity>
                         </View>
-                    </Pressable>
-                </Pressable>
+                    </View>
+                </View>
             </Modal>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -369,6 +371,9 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.45)',
         justifyContent: 'center',
         padding: wp('6%'),
+    },
+    modalDismissArea: {
+        ...StyleSheet.absoluteFillObject,
     },
     modalCard: {
         backgroundColor: '#fff',
