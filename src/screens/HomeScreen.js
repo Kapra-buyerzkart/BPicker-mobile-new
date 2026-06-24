@@ -5,17 +5,19 @@ import {
   StyleSheet,
   TouchableOpacity,
   FlatList,
-  ActivityIndicator,
-  Modal,
+  StatusBar,
 } from 'react-native';
-import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { FONTS } from '../styles/typography';
+import { COLORS, RADIUS, CARD_BORDER, FONT_SIZES, wp, hp } from '../styles/theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import SummaryCard from '../components/SummaryCard';
 import OrderCard from '../components/OrderCard';
+import EmptyState from '../components/EmptyState';
+import ConfirmModal from '../components/ConfirmModal';
+import { OrderListSkeleton } from '../components/SkeletonLoader';
 import { getOrders, updateOrderStatus } from '../services/ordersService';
 import { getStoredUser } from '../services/authService';
 import BadgeIcon from '../components/BadgeIcon';
@@ -43,6 +45,8 @@ const HomeScreen = ({ navigation, route }) => {
     Packed: 0,
   });
   const hasFocusedOnce = useRef(false);
+  const hasInitializedRef = useRef(false);
+  const skipNextStatusFetchRef = useRef(false);
 
   const statusToApiValue = {
     Pending: 'pending',
@@ -77,7 +81,63 @@ const HomeScreen = ({ navigation, route }) => {
     }
   };
 
+  const loadInitialOrders = async () => {
+    setIsLoading(true);
+    setErrorMessage('');
+
+    try {
+      const [pendingOrders, pickingOrders, packedOrders] = await Promise.all([
+        getOrders(statusToApiValue.Pending),
+        getOrders(statusToApiValue.Picking),
+        getOrders(statusToApiValue.Packed),
+      ]);
+
+      const ordersByStatus = {
+        Pending: pendingOrders,
+        Picking: pickingOrders,
+        Packed: packedOrders,
+      };
+
+      setStatusCounts({
+        Pending: pendingOrders.length,
+        Picking: pickingOrders.length,
+        Packed: packedOrders.length,
+      });
+
+      const initialStatus =
+        ['Pending', 'Picking', 'Packed'].find(
+          (status) => ordersByStatus[status].length > 0
+        ) || 'Pending';
+
+      setOrdersData(ordersByStatus[initialStatus]);
+      if (initialStatus !== selectedStatus) {
+        skipNextStatusFetchRef.current = true;
+        setSelectedStatus(initialStatus);
+      }
+    } catch (error) {
+      setErrorMessage(
+        error?.response?.data?.message ||
+        error?.message ||
+        'Unable to fetch orders.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
+    loadInitialOrders();
+  }, []);
+
+  useEffect(() => {
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      return;
+    }
+    if (skipNextStatusFetchRef.current) {
+      skipNextStatusFetchRef.current = false;
+      return;
+    }
     loadOrders(selectedStatus);
   }, [selectedStatus]);
 
@@ -175,6 +235,8 @@ const HomeScreen = ({ navigation, route }) => {
     return statusCounts[status] ?? 0;
   };
 
+  const pipelineTotal = statusCounts.Pending + statusCounts.Picking + statusCounts.Packed;
+
   const handleConfirmStartPicking = async () => {
     if (!selectedOrderId) {
       setStartOrderError('Invalid order selected.');
@@ -207,172 +269,133 @@ const HomeScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <View
-        style={styles.container}
-      // showsVerticalScrollIndicator={false}
-      >
-        <View style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: hp('1.5%'),
-          paddingHorizontal: wp('2%')
-        }}>
-          <Text style={styles.storeText}>Store : {storeName || '-'}</Text>
-          <View style={{
-            flexDirection: 'row',
-            alignItems: 'center'
-          }}>
-            <TouchableOpacity onPress={() => loadOrders(selectedStatus, true)}>
-              <FontAwesome name={'refresh'} size={wp('6%')} color="black" />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.greeting}>Welcome back</Text>
+            <Text style={styles.storeText} numberOfLines={1}>{storeName || '-'}</Text>
+          </View>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={() => loadOrders(selectedStatus, true)}
+              style={styles.iconButton}
+              activeOpacity={0.7}
+            >
+              <Icon name="refresh" size={wp('5.4%')} color={COLORS.textPrimary} />
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => clearNotificationBadgeCount()}
-              style={{
-                marginLeft: wp('5%')
-              }}
+              style={styles.iconButton}
+              activeOpacity={0.7}
             >
               <BadgeIcon count={notificationBadgeCount}>
-                <Ionicons name={'notifications-outline'} size={wp('6%')} color="black" />
+                <Ionicons name={'notifications-outline'} size={wp('5.4%')} color={COLORS.textPrimary} />
               </BadgeIcon>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={{
-              borderWidth: 1,
-              borderColor: 'black',
-              padding: wp('1.3%'),
-              borderRadius: 20,
-              marginLeft: wp('5%')
-            }}>
-              <Ionicons name={'person'} size={wp('6%')} color="black" />
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Profile')}
+              style={[styles.iconButton, styles.profileButton]}
+              activeOpacity={0.7}
+            >
+              <Ionicons name={'person'} size={wp('5%')} color={COLORS.white} />
             </TouchableOpacity>
           </View>
         </View>
-        {/* Summary Cards */}
-        <View style={styles.cardGrid}>
-          <SummaryCard
-            color="#E75B54"
-            icon="clock-outline"
-            title="Pending"
-            count={getOrderCountByStatus('Pending')}
-            isActive={selectedStatus === 'Pending'}
-            onPress={() => setSelectedStatus('Pending')}
-          />
-          <SummaryCard
-            color="#f4ab35"
-            icon="run"
-            title="Picking"
-            count={getOrderCountByStatus('Picking')}
-            isActive={selectedStatus === 'Picking'}
-            onPress={() => setSelectedStatus('Picking')}
-          />
-          <SummaryCard
-            color="#4A90E2"
-            icon="human-dolly"
-            title="Packed"
-            count={getOrderCountByStatus('Packed')}
-            isActive={selectedStatus === 'Packed'}
-            onPress={() => setSelectedStatus('Packed')}
-          />
-          {/* <SummaryCard
-            color="#4CAF50"
-            icon="truck"
-            title="Dispatched"
-            count="0"
-          />
-          <SummaryCard
-            color="#6EC6B8"
-            icon="check-circle-outline"
-            title="Delivered"
-            count="0"
-          />
-          <SummaryCard
-            color="#f3db05"
-            icon="cancel"
-            title="Cancel/refund"
-            count="0"
-          /> */}
-        </View>
 
-        {/* Total */}
-        <View style={styles.totalCard}>
-          <Text style={styles.totalText}>
-            Total {selectedStatus} Orders : {ordersData.length}
-          </Text>
-        </View>
-
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#C93D14" />
-            <Text style={styles.loadingText}>Loading orders...</Text>
-          </View>
-        ) : (
-          <>
-            {!!errorMessage && (
-              <View style={styles.errorCard}>
-                <Text style={styles.errorText}>{errorMessage}</Text>
-              </View>
-            )}
-
-            <FlatList
-              data={ordersData}
-              keyExtractor={(item) => item.id}
-              renderItem={renderOrderItem}
-              showsVerticalScrollIndicator={false}
-              refreshing={isRefreshing}
-              onRefresh={() => loadOrders(selectedStatus, true)}
-              ListEmptyComponent={
-                <Text style={styles.emptyText}>No orders found</Text>
-              }
-              style={styles.list}
-              contentContainerStyle={{ paddingBottom: 0 }}
+        <View style={styles.body}>
+          {/* Summary Cards */}
+          <View style={styles.cardGrid}>
+            <SummaryCard
+              color={COLORS.warning}
+              icon="clock-outline"
+              title="Pending"
+              count={getOrderCountByStatus('Pending')}
+              total={pipelineTotal}
+              isActive={selectedStatus === 'Pending'}
+              onPress={() => setSelectedStatus('Pending')}
             />
-          </>
-        )}
-      </View>
-      <Modal
-        visible={isStartConfirmVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsStartConfirmVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Confirm Start Picking</Text>
-            <Text style={styles.modalText}>
-              Start picking for order {selectedOrderNumber}?
-            </Text>
-            {!!startOrderError && (
-              <Text style={styles.modalErrorText}>{startOrderError}</Text>
-            )}
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.modalCancelButton}
-                onPress={() => {
-                  if (!isStartingOrder) {
-                    setIsStartConfirmVisible(false);
-                  }
-                }}
-                disabled={isStartingOrder}
-              >
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalOkButton}
-                onPress={handleConfirmStartPicking}
-                disabled={isStartingOrder}
-              >
-                {isStartingOrder ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.modalOkText}>OK</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+            <SummaryCard
+              color={COLORS.secondary}
+              icon="run"
+              title="Picking"
+              count={getOrderCountByStatus('Picking')}
+              total={pipelineTotal}
+              isActive={selectedStatus === 'Picking'}
+              onPress={() => setSelectedStatus('Picking')}
+            />
+            <SummaryCard
+              color={COLORS.info}
+              icon="human-dolly"
+              title="Packed"
+              count={getOrderCountByStatus('Packed')}
+              total={pipelineTotal}
+              isActive={selectedStatus === 'Packed'}
+              onPress={() => setSelectedStatus('Packed')}
+            />
           </View>
+
+          {/* Total */}
+          <View style={styles.totalCard}>
+            <View style={styles.totalIconCircle}>
+              <Icon name="clipboard-text-outline" size={wp('5.5%')} color={COLORS.primary} />
+            </View>
+            <Text style={styles.totalText}>
+              Total {selectedStatus} Orders
+            </Text>
+            <Text style={styles.totalCount}>{ordersData.length}</Text>
+          </View>
+
+          {isLoading ? (
+            <OrderListSkeleton count={3} />
+          ) : (
+            <>
+              {!!errorMessage && (
+                <View style={styles.errorCard}>
+                  <Icon name="alert-circle-outline" size={wp('5%')} color={COLORS.danger} />
+                  <Text style={styles.errorText}>{errorMessage}</Text>
+                </View>
+              )}
+
+              <FlatList
+                data={ordersData}
+                keyExtractor={(item) => item.id}
+                renderItem={renderOrderItem}
+                showsVerticalScrollIndicator={false}
+                refreshing={isRefreshing}
+                onRefresh={() => loadOrders(selectedStatus, true)}
+                ListEmptyComponent={
+                  <EmptyState
+                    icon="clipboard-list-outline"
+                    title="No orders found"
+                    subtitle={`You have no ${selectedStatus.toLowerCase()} orders right now.`}
+                  />
+                }
+                style={styles.list}
+                contentContainerStyle={{ paddingBottom: 0 }}
+              />
+            </>
+          )}
         </View>
-      </Modal>
+      </View>
+
+      <ConfirmModal
+        visible={isStartConfirmVisible}
+        title="Confirm Start Picking"
+        message={`Start picking for order ${selectedOrderNumber}?`}
+        error={startOrderError}
+        confirmLabel="OK"
+        cancelLabel="Cancel"
+        loading={isStartingOrder}
+        onCancel={() => {
+          if (!isStartingOrder) {
+            setIsStartConfirmVisible(false);
+          }
+        }}
+        onConfirm={handleConfirmStartPicking}
+      />
     </SafeAreaView>
   );
 };
@@ -382,209 +405,122 @@ export default HomeScreen;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.card,
   },
 
   container: {
     flex: 1,
+    backgroundColor: COLORS.background,
+  },
+
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
     paddingHorizontal: wp('4%'),
-    paddingTop: wp('4%'),
-    paddingBottom: 0,
+    paddingVertical: hp('1.6%'),
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+
+  greeting: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textSecondary,
+    fontFamily: FONTS.openSans.regular,
+  },
+
+  storeText: {
+    fontSize: FONT_SIZES.lg,
+    color: COLORS.textPrimary,
+    fontFamily: FONTS.openSans.semiBold,
+    marginTop: 2,
+    maxWidth: wp('45%'),
+  },
+
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp('2.5%'),
+  },
+
+  iconButton: {
+    width: wp('10.5%'),
+    height: wp('10.5%'),
+    borderRadius: wp('5.25%'),
+    backgroundColor: COLORS.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  profileButton: {
+    backgroundColor: COLORS.primary,
+  },
+
+  body: {
+    flex: 1,
+    paddingHorizontal: wp('4%'),
+    paddingTop: hp('1.8%'),
   },
 
   list: {
     flex: 1,
   },
 
-  storeText: {
-    fontSize: wp('4%'),
-    // marginBottom: hp('1.5%'),
-    fontFamily: FONTS.openSans.semiBold
-  },
-
   cardGrid: {
     flexDirection: 'row',
-    // flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginTop: hp('0.5%')
-  },
-
-  summaryCard: {
-    width: '48%',
-    borderRadius: 10,
-    // padding: 14,
-    marginBottom: hp('1.5%'),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-evenly',
-    paddingVertical: wp('1.5%')
-  },
-
-  cardCount: {
-    fontSize: wp('4%'),
-    color: '#fff',
-    // marginTop: 6,
-    fontFamily: FONTS.openSans.semiBold
-  },
-
-  cardTitle: {
-    color: '#fff',
-    // marginTop: 4,
-    fontSize: wp('3.3%'),
-    fontFamily: FONTS.openSans.semiBold
+    marginHorizontal: -wp('1%'),
+    marginBottom: hp('1.6%'),
   },
 
   totalCard: {
-    backgroundColor: '#8E44AD',
-    padding: wp('3.5%'),
-    borderRadius: 10,
-    marginVertical: hp('2%'),
+    backgroundColor: COLORS.card,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: RADIUS.lg,
+    paddingVertical: hp('1.6%'),
+    paddingHorizontal: wp('4%'),
+    marginBottom: hp('1.8%'),
+    ...CARD_BORDER,
+  },
+
+  totalIconCircle: {
+    width: wp('10%'),
+    height: wp('10%'),
+    borderRadius: wp('5%'),
+    backgroundColor: '#FFEDE3',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: wp('3%'),
   },
 
   totalText: {
-    color: '#fff',
-    textAlign: 'center',
-    fontSize: wp('4%'),
-    fontWeight: '600',
-  },
-
-  orderCard: {
-    flexDirection: 'row',
-    backgroundColor: '#E75B54',
-    borderRadius: 10,
-    padding: wp('4%'),
-    alignItems: 'center',
-  },
-
-  orderId: {
-    color: '#fff',
-    fontSize: wp('3.5%'),
-    fontFamily: FONTS.openSans.semiBold
-  },
-
-  orderMeta: {
-    color: '#fff',
-    fontSize: wp('3%'),
-    fontFamily: FONTS.openSans.regular,
-    marginTop: hp('0.1%'),
-  },
-
-  orderRight: {
-    alignItems: 'flex-end',
-  },
-
-  amount: {
-    color: '#fff',
-    // fontWeight: '600',
-    marginBottom: hp('0.3%'),
-    fontFamily: FONTS.openSans.semiBold,
-    marginRight: wp('1%'),
-    fontSize: wp('3.5%')
-  },
-
-  startBtn: {
-    backgroundColor: '#7ED957',
-    paddingHorizontal: wp('5%'),
-    paddingVertical: wp('1%'),
-    borderRadius: 6,
-  },
-
-  startText: {
-    color: '#000',
-    fontFamily: FONTS.openSans.semiBold,
-    fontSize: wp('3.5%')
-    // fontWeight: '600',
-  },
-  emptyText: {
-    textAlign: 'center',
-    marginTop: hp('5%'),
-    fontSize: wp('4%'),
-    color: '#888',
+    flex: 1,
+    color: COLORS.textSecondary,
+    fontSize: FONT_SIZES.sm,
     fontFamily: FONTS.openSans.semiBold,
   },
-  loadingContainer: {
-    alignItems: 'center',
-    marginTop: hp('6%'),
+
+  totalCount: {
+    color: COLORS.textPrimary,
+    fontSize: FONT_SIZES.xl,
+    fontFamily: FONTS.openSans.bold,
   },
-  loadingText: {
-    marginTop: hp('1%'),
-    color: '#666',
-    fontFamily: FONTS.openSans.semiBold,
-  },
+
   errorCard: {
-    backgroundColor: '#FDECEC',
-    borderColor: '#F5C2C0',
-    borderWidth: 1,
-    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp('2%'),
+    backgroundColor: COLORS.dangerLight,
+    borderRadius: RADIUS.md,
     padding: wp('3%'),
     marginBottom: hp('1.2%'),
   },
+
   errorText: {
-    color: '#A94442',
-    fontFamily: FONTS.openSans.semiBold,
-    fontSize: wp('3.2%'),
-  },
-  modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: wp('8%'),
-  },
-  modalCard: {
-    width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: wp('5%'),
-  },
-  modalTitle: {
-    textAlign: 'center',
-    color: '#1A1A1A',
+    color: '#B91C1C',
     fontFamily: FONTS.openSans.semiBold,
-    fontSize: wp('4.2%'),
-    marginBottom: hp('1%'),
-  },
-  modalText: {
-    textAlign: 'center',
-    color: '#333',
-    fontFamily: FONTS.openSans.regular,
-    fontSize: wp('3.6%'),
-    marginBottom: hp('2%'),
-  },
-  modalErrorText: {
-    color: '#D32F2F',
-    textAlign: 'center',
-    fontFamily: FONTS.openSans.semiBold,
-    marginBottom: hp('1%'),
-    fontSize: wp('3.2%'),
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  modalCancelButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#C93D14',
-    borderRadius: 8,
-    paddingVertical: hp('1.2%'),
-    marginRight: wp('2%'),
-    alignItems: 'center',
-  },
-  modalCancelText: {
-    color: '#C93D14',
-    fontFamily: FONTS.openSans.semiBold,
-  },
-  modalOkButton: {
-    flex: 1,
-    backgroundColor: '#C93D14',
-    borderRadius: 8,
-    paddingVertical: hp('1.2%'),
-    marginLeft: wp('2%'),
-    alignItems: 'center',
-  },
-  modalOkText: {
-    color: '#fff',
-    fontFamily: FONTS.openSans.semiBold,
+    fontSize: FONT_SIZES.sm,
   },
 });

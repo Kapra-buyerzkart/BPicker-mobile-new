@@ -1,109 +1,166 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { Animated, View, Text, StyleSheet } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-} from 'react-native';
-import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
+  COLORS,
+  RADIUS,
+  CARD_BORDER,
+  FONT_SIZES,
+  wp,
+  hp,
+} from '../styles/theme';
 import { FONTS } from '../styles/typography';
+import StatusBadge from './StatusBadge';
+import AppButton from './AppButton';
+import PipelineTracker from './PipelineTracker';
+
+const CTA_BY_STATUS = {
+  Pending: { label: 'START', variant: 'primary' },
+  Picking: { label: 'CONTINUE', variant: 'primary' },
+};
 
 const OrderCard = ({
-    orderId,
-    date,
-    slot,
-    amount,
-    onStartPress,
-    selectedStatus
+  orderId,
+  date,
+  slot,
+  amount,
+  onStartPress,
+  selectedStatus,
 }) => {
-    const formattedAmount = Number.isFinite(Number(amount))
-        ? Number(amount).toFixed(2)
-        : '0.00';
+  const formattedAmount = Number.isFinite(Number(amount))
+    ? Number(amount).toFixed(2)
+    : '0.00';
+  const cta = CTA_BY_STATUS[selectedStatus] || {
+    label: 'VIEW',
+    variant: 'secondary',
+  };
 
-    const cardStyle = [
-        styles.orderCard,
-        selectedStatus === 'Picking' && styles.orderCardPicking,
-        selectedStatus !== 'Pending' && selectedStatus !== 'Picking' && styles.orderCardView,
-    ];
+  const fade = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(12)).current;
 
-    return (
-        <View style={cardStyle}>
-            <View style={styles.orderLeft}>
-                <Text style={styles.orderId}>{orderId}</Text>
-                <Text style={styles.orderMeta}>Placed on : {date}</Text>
-                <Text style={styles.orderMeta}>Slot : {slot}</Text>
-            </View>
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fade, {
+        toValue: 1,
+        duration: 280,
+        useNativeDriver: true,
+      }),
+      Animated.spring(translateY, {
+        toValue: 0,
+        useNativeDriver: true,
+        speed: 18,
+        bounciness: 6,
+      }),
+    ]).start();
+  }, [fade, translateY]);
 
-            <View style={styles.orderRight}>
-                <Text style={styles.amount}>₹ {formattedAmount}</Text>
-                <TouchableOpacity
-                    onPress={onStartPress}
-                    style={styles.startBtn}
-                    activeOpacity={0.8}
-                >
-                    <Text style={styles.startText}>{selectedStatus === "Pending" ? "START" : selectedStatus === "Picking" ? "CONTINUE" : "VIEW"}</Text>
-                </TouchableOpacity>
-            </View>
+  return (
+    <Animated.View style={{ opacity: fade, transform: [{ translateY }] }}>
+      <View style={styles.card}>
+        <View style={styles.topRow}>
+          <Text style={styles.orderId}>{orderId}</Text>
+          <StatusBadge status={selectedStatus} />
         </View>
-    );
+
+        <View style={styles.metaRow}>
+          <Icon
+            name="calendar-blank-outline"
+            size={wp('3.8%')}
+            color={COLORS.textSecondary}
+          />
+          <Text style={styles.orderMeta}>{date}</Text>
+        </View>
+        <View style={styles.metaRow}>
+          <Icon
+            name="clock-outline"
+            size={wp('3.8%')}
+            color={COLORS.textSecondary}
+          />
+          <Text style={styles.orderMeta}>{slot}</Text>
+        </View>
+
+        {/* <View style={styles.divider} /> */}
+
+        {/* <PipelineTracker currentStatus={selectedStatus} /> */}
+
+        <View style={styles.divider} />
+
+        <View style={styles.bottomRow}>
+          <View>
+            <Text style={styles.amountLabel}>Order Value</Text>
+            <Text style={styles.amount}>₹ {formattedAmount}</Text>
+          </View>
+          <AppButton
+            label={cta.label}
+            variant={cta.variant}
+            size="sm"
+            onPress={onStartPress}
+            style={styles.ctaButton}
+            textStyle={styles.ctaText}
+          />
+        </View>
+      </View>
+    </Animated.View>
+  );
 };
 
 export default OrderCard;
 
 const styles = StyleSheet.create({
-    orderCard: {
-        flexDirection: 'row',
-        backgroundColor: '#E75B54',
-        borderRadius: 10,
-        padding: wp('4%'),
-        alignItems: 'center',
-        marginBottom: hp('1.2%'),
-    },
-    orderCardPicking: {
-        backgroundColor: "#f4ab35"
-    },
-    orderCardView: {
-        backgroundColor: '#4A90E2'
-    },
-    orderLeft: {
-        flex: 1
-    },
-
-    orderId: {
-        color: '#fff',
-        fontSize: wp('3.5%'),
-        fontFamily: FONTS.openSans.semiBold,
-    },
-
-    orderMeta: {
-        color: '#fff',
-        fontSize: wp('3%'),
-        fontFamily: FONTS.openSans.regular,
-        marginTop: hp('0.2%'),
-    },
-
-    orderRight: {
-        alignItems: 'flex-end',
-    },
-
-    amount: {
-        color: '#fff',
-        fontFamily: FONTS.openSans.semiBold,
-        marginBottom: hp('0.4%'),
-        fontSize: wp('3.5%'),
-        marginRight: wp('1%')
-    },
-
-    startBtn: {
-        backgroundColor: '#7ED957',
-        paddingHorizontal: wp('5%'),
-        paddingVertical: wp('1%'),
-        borderRadius: 6,
-    },
-
-    startText: {
-        color: '#000',
-        fontFamily: FONTS.openSans.semiBold,
-        fontSize: wp('3.5%'),
-    },
+  card: {
+    backgroundColor: COLORS.card,
+    borderRadius: RADIUS.lg,
+    padding: wp('4%'),
+    marginBottom: hp('1.4%'),
+    ...CARD_BORDER,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: hp('1%'),
+  },
+  orderId: {
+    color: COLORS.textPrimary,
+    fontSize: FONT_SIZES.lg,
+    fontFamily: FONTS.openSans.semiBold,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: hp('0.3%'),
+    gap: 6,
+  },
+  orderMeta: {
+    color: COLORS.textSecondary,
+    fontSize: FONT_SIZES.sm,
+    fontFamily: FONTS.openSans.regular,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: hp('1.4%'),
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  amountLabel: {
+    color: COLORS.textMuted,
+    fontSize: FONT_SIZES.xs,
+    fontFamily: FONTS.openSans.regular,
+  },
+  amount: {
+    color: COLORS.textPrimary,
+    fontFamily: FONTS.openSans.bold,
+    fontSize: FONT_SIZES.lg,
+    marginTop: 2,
+  },
+  ctaButton: {
+    minWidth: wp('30%'),
+  },
+  ctaText: {
+    fontSize: FONT_SIZES.md,
+  },
 });

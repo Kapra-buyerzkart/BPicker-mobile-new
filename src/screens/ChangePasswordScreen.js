@@ -2,20 +2,21 @@ import React, { useState } from 'react';
 import {
     View,
     Text,
-    TextInput,
     TouchableOpacity,
     StyleSheet,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    ActivityIndicator,
-    Modal,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
+import { wp, hp, COLORS, RADIUS, CARD_BORDER, FONT_SIZES } from '../styles/theme';
 import { FONTS } from '../styles/typography';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { changePickerPassword } from '../services/authService';
+import AppHeader from '../components/AppHeader';
+import AppTextInput from '../components/AppTextInput';
+import AppButton from '../components/AppButton';
+import ConfirmModal from '../components/ConfirmModal';
 
 const ChangePasswordScreen = ({ navigation }) => {
     const [showOldPassword, setShowOldPassword] = useState(false);
@@ -72,123 +73,90 @@ const ChangePasswordScreen = ({ navigation }) => {
         }
     };
 
+    const eyeToggle = (visible, setVisible) => (
+        <TouchableOpacity onPress={() => setVisible(!visible)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Icon
+                name={visible ? 'eye-off-outline' : 'eye-outline'}
+                size={wp('5%')}
+                color={visible ? COLORS.primary : COLORS.textMuted}
+            />
+        </TouchableOpacity>
+    );
+
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+            <AppHeader title="Change Password" onBackPress={() => navigation.goBack()} />
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.container}
             >
-                <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={() => navigation.goBack()}
-                >
-                    <Icon name="arrow-left" size={wp('7%')} color="#fff" />
-                </TouchableOpacity>
                 <ScrollView
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.scroll}>
                     <View style={styles.card}>
-                        <Text style={styles.title}>Change Password</Text>
-
-                        <View style={styles.inputContainer}>
-                            <TextInput
-                                placeholder="Old Password"
-                                placeholderTextColor="#999"
-                                secureTextEntry={!showOldPassword}
-                                value={oldPassword}
-                                onChangeText={setOldPassword}
-                                style={styles.input}
-                            />
-                            <TouchableOpacity onPress={() => setShowOldPassword(!showOldPassword)}>
-                                <Icon
-                                    name={'eye-outline'}
-                                    size={wp('5%')}
-                                    color={!showOldPassword ? "#777" : "#C93D14"}
-                                />
-                            </TouchableOpacity>
+                        <View style={styles.iconCircle}>
+                            <Icon name="lock-reset" size={wp('8%')} color={COLORS.primary} />
                         </View>
 
-                        <View style={styles.inputContainer}>
-                            <TextInput
-                                placeholder="New Password"
-                                placeholderTextColor="#999"
-                                secureTextEntry={!showPassword}
-                                value={newPassword}
-                                onChangeText={setNewPassword}
-                                style={styles.input}
-                            />
-                            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                                <Icon
-                                    name={'eye-outline'}
-                                    size={wp('5%')}
-                                    color={!showPassword ? "#777" : "#C93D14"}
-                                />
-                            </TouchableOpacity>
-                        </View>
+                        <AppTextInput
+                            label="Old Password"
+                            secureTextEntry={!showOldPassword}
+                            value={oldPassword}
+                            onChangeText={setOldPassword}
+                            rightIcon={eyeToggle(showOldPassword, setShowOldPassword)}
+                        />
 
-                        <View style={styles.inputContainer}>
-                            <TextInput
-                                placeholder="Confirm New Password"
-                                placeholderTextColor="#999"
-                                secureTextEntry={!showConfirmPassword}
-                                value={confirmPassword}
-                                onChangeText={setConfirmPassword}
-                                style={styles.input}
-                            />
-                            <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                                <Icon
-                                    name={'eye-outline'}
-                                    size={wp('5%')}
-                                    color={!showConfirmPassword ? "#777" : "#C93D14"}
-                                />
-                            </TouchableOpacity>
-                        </View>
+                        <AppTextInput
+                            label="New Password"
+                            secureTextEntry={!showPassword}
+                            value={newPassword}
+                            onChangeText={setNewPassword}
+                            rightIcon={eyeToggle(showPassword, setShowPassword)}
+                        />
+
+                        <AppTextInput
+                            label="Confirm New Password"
+                            secureTextEntry={!showConfirmPassword}
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
+                            rightIcon={eyeToggle(showConfirmPassword, setShowConfirmPassword)}
+                        />
 
                         {!!errorMessage && (
-                            <Text style={styles.errorText}>{errorMessage}</Text>
+                            <View style={styles.errorBox}>
+                                <Icon name="alert-circle-outline" size={wp('4.4%')} color={COLORS.danger} />
+                                <Text style={styles.errorText}>{errorMessage}</Text>
+                            </View>
                         )}
-                        <TouchableOpacity
+
+                        <AppButton
+                            label="Change"
                             onPress={handleChangePassword}
-                            style={styles.button}
+                            loading={isLoading}
                             disabled={isLoading}
-                        >
-                            {isLoading ? (
-                                <ActivityIndicator color="#fff" />
-                            ) : (
-                                <Text style={styles.buttonText}>Change</Text>
-                            )}
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                            style={styles.actionButton}
+                        />
+                        <AppButton
+                            label="Back"
+                            variant="secondary"
                             onPress={() => navigation.goBack()}
-                            style={styles.secondaryButton}
-                        >
-                            <Text style={styles.secondaryButtonText}>Back</Text>
-                        </TouchableOpacity>
+                            style={styles.actionButton}
+                        />
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
-            <Modal
+
+            <ConfirmModal
                 visible={isSuccessModalVisible}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setIsSuccessModalVisible(false)}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalCard}>
-                        <Text style={styles.modalTitle}>Success</Text>
-                        <Text style={styles.modalMessage}>
-                            {successMessage || 'Password changed successfully.'}
-                        </Text>
-                        <TouchableOpacity
-                            style={styles.modalButton}
-                            onPress={() => setIsSuccessModalVisible(false)}
-                        >
-                            <Text style={styles.modalButtonText}>OK</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
+                title="Success"
+                message={successMessage || 'Password changed successfully.'}
+                confirmLabel="OK"
+                variant="success"
+                hideCancel
+                onConfirm={() => setIsSuccessModalVisible(false)}
+                onCancel={() => setIsSuccessModalVisible(false)}
+            />
         </SafeAreaView>
     );
 };
@@ -198,141 +166,56 @@ export default ChangePasswordScreen;
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#FF7148',
+        backgroundColor: COLORS.card,
     },
     container: {
         flex: 1,
-        backgroundColor: '#FF7148',
+        backgroundColor: COLORS.background,
     },
 
     scroll: {
         flexGrow: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: wp('4%'),
+        padding: wp('5%'),
     },
 
     card: {
-        width: wp('90%'),
-        backgroundColor: '#fff',
-        borderRadius: wp('3%'),
+        width: '100%',
+        backgroundColor: COLORS.card,
+        borderRadius: RADIUS.xl,
         padding: wp('6%'),
-        elevation: 5,
+        alignItems: 'center',
+        ...CARD_BORDER,
     },
 
-    title: {
-        fontSize: wp('5%'),
-        // fontWeight: 'bold',
-        color: '#C93D14',
-        textAlign: 'center',
-        marginBottom: hp('2.5%'),
-        fontFamily: FONTS.openSans.semiBold
+    iconCircle: {
+        width: wp('16%'),
+        height: wp('16%'),
+        borderRadius: wp('8%'),
+        backgroundColor: '#FFEDE3',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: hp('2.2%'),
     },
 
-    inputContainer: {
+    errorBox: {
+        width: '100%',
         flexDirection: 'row',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: wp('2%'),
-        paddingHorizontal: wp('3%'),
-        marginBottom: hp('2%'),
-        height: hp('6.5%'),
+        gap: wp('1.6%'),
+        marginBottom: hp('1%'),
     },
 
-    input: {
-        flex: 1,
-        fontSize: wp('3.7%'),
-        color: '#000',
-        fontFamily: FONTS.openSans.regular
-    },
-
-    button: {
-        backgroundColor: '#C93D14',
-        height: hp('6.5%'),
-        borderRadius: wp('2%'),
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: hp('1%'),
-    },
-
-    buttonText: {
-        color: '#fff',
-        fontSize: wp('4%'),
-        fontFamily: FONTS.openSans.semiBold
-    },
-    secondaryButton: {
-        backgroundColor: '#fff',
-        height: hp('6.5%'),
-        borderRadius: wp('2%'),
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: hp('1%'),
-        borderWidth: 1,
-        borderColor: '#C93D14',
-    },
-    secondaryButtonText: {
-        color: '#C93D14',
-        fontSize: wp('4%'),
-        fontFamily: FONTS.openSans.semiBold,
-    },
     errorText: {
-        color: '#D32F2F',
-        fontFamily: FONTS.openSans.semiBold,
-        fontSize: wp('3.2%'),
-        marginBottom: hp('1%'),
-    },
-    modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.45)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: wp('8%'),
+        color: COLORS.danger,
+        fontFamily: FONTS.openSans.semiBold,
+        fontSize: FONT_SIZES.sm,
     },
-    modalCard: {
+
+    actionButton: {
         width: '100%',
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: wp('5%'),
-    },
-    modalTitle: {
-        fontSize: wp('5%'),
-        color: '#1B7A35',
-        fontFamily: FONTS.openSans.semiBold,
-        marginBottom: hp('1%'),
-        textAlign: 'center',
-    },
-    modalMessage: {
-        fontSize: wp('3.8%'),
-        color: '#222',
-        fontFamily: FONTS.openSans.regular,
-        textAlign: 'center',
-        marginBottom: hp('2%'),
-    },
-    modalButton: {
-        backgroundColor: '#C93D14',
-        borderRadius: wp('2%'),
-        height: hp('5.8%'),
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalButtonText: {
-        color: '#fff',
-        fontSize: wp('3.8%'),
-        fontFamily: FONTS.openSans.semiBold,
-    },
-
-    footerText: {
-        marginTop: hp('3%'),
-        fontSize: wp('3%'),
-        color: '#aaa',
-        textAlign: 'center',
-    },
-
-    backButton: {
-        position: 'absolute',
-        top: hp('2%'),
-        left: wp('5%'),
-        zIndex: 10,
+        marginTop: hp('1%'),
     },
 });

@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { COLORS } from '../styles/theme';
 
 export default function BadgeIcon({ count = 0, children, max = 99 }) {
   const normalizedCount = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
@@ -31,7 +32,7 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 8,
     paddingHorizontal: 4,
-    backgroundColor: '#D32F2F',
+    backgroundColor: COLORS.danger,
     alignItems: 'center',
     justifyContent: 'center',
   },

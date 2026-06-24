@@ -2,25 +2,23 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  ActivityIndicator,
+  StatusBar,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import {
-  widthPercentageToDP as wp,
-  heightPercentageToDP as hp,
-} from 'react-native-responsive-screen';
+import { wp, hp, COLORS, RADIUS, CARD_BORDER, FONT_SIZES } from '../styles/theme';
 import { FONTS } from '../styles/typography';
 import { loginPickerAgent } from '../services/authService';
 import {
   oneSignalLogin,
   requestPushPermissionIfNeeded,
 } from '../services/oneSignalService';
+import AppTextInput from '../components/AppTextInput';
+import AppButton from '../components/AppButton';
 
 const LoginScreen = ({ navigation }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -101,68 +99,63 @@ const LoginScreen = ({ navigation }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
       >
+        <View style={styles.logoCircle}>
+          <Icon name="scooter" size={wp('10%')} color={COLORS.white} />
+        </View>
+
         <View style={styles.card}>
           <Text style={styles.title}>BPicker</Text>
+          <Text style={styles.subtitle}>Sign in to start picking orders</Text>
 
-          {/* Mobile Number Input */}
-          <View style={styles.inputContainer}>
-            <TextInput
-              placeholder="Mobile Number"
-              placeholderTextColor="#999"
-              keyboardType="phone-pad"
-              maxLength={10}
-              value={phone}
-              onChangeText={text => setPhone(text.replace(/\D/g, ''))}
-              style={styles.input}
-            />
-            <Icon name="cellphone" size={wp('5%')} color="#777" />
-          </View>
+          <AppTextInput
+            label="Mobile Number"
+            keyboardType="phone-pad"
+            maxLength={10}
+            value={phone}
+            onChangeText={text => setPhone(text.replace(/\D/g, ''))}
+            rightIcon={<Icon name="cellphone" size={wp('5%')} color={COLORS.textMuted} />}
+          />
 
-          {/* Password Input */}
-          <View style={styles.inputContainer}>
-            <TextInput
-              placeholder="Password"
-              placeholderTextColor="#999"
-              secureTextEntry={!showPassword}
-              value={password}
-              onChangeText={setPassword}
-              style={styles.input}
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-              <Icon
-                name={'eye-outline'}
-                size={wp('5%')}
-                color={!showPassword ? '#777' : '#C93D14'}
-              />
-            </TouchableOpacity>
-          </View>
+          <AppTextInput
+            label="Password"
+            secureTextEntry={!showPassword}
+            value={password}
+            onChangeText={setPassword}
+            rightIcon={
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Icon
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  size={wp('5%')}
+                  color={showPassword ? COLORS.primary : COLORS.textMuted}
+                />
+              </TouchableOpacity>
+            }
+          />
 
-          {/* Login Button */}
           {!!errorMessage && (
-            <Text style={styles.errorText}>{errorMessage}</Text>
+            <View style={styles.errorBox}>
+              <Icon name="alert-circle-outline" size={wp('4.4%')} color={COLORS.danger} />
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            </View>
           )}
-          <TouchableOpacity
+
+          <AppButton
+            label="LOGIN"
             onPress={handleLogin}
-            style={styles.button}
+            loading={isLoading}
             disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>LOGIN</Text>
-            )}
-          </TouchableOpacity>
+            style={styles.loginButton}
+          />
 
           <Text style={styles.forgotPasswordText}>
             If you forgot your password, contact your system administrator.
           </Text>
-
-          {/* <Text style={styles.footerText}>Powered by Kapra</Text> */}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -174,83 +167,72 @@ export default LoginScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FF7148',
+    backgroundColor: COLORS.primary,
   },
 
   scroll: {
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: wp('4%'),
+    padding: wp('6%'),
+  },
+
+  logoCircle: {
+    width: wp('20%'),
+    height: wp('20%'),
+    borderRadius: wp('10%'),
+    backgroundColor: COLORS.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: hp('2.5%'),
   },
 
   card: {
     width: wp('90%'),
-    backgroundColor: '#fff',
-    borderRadius: wp('3%'),
+    backgroundColor: COLORS.card,
+    borderRadius: RADIUS.xl,
     padding: wp('6%'),
-    elevation: 5,
+    ...CARD_BORDER,
   },
 
   title: {
-    fontSize: wp('6%'),
-    // fontWeight: 'bold',
-    color: '#C93D14',
+    fontSize: FONT_SIZES.xxl,
+    color: COLORS.textPrimary,
     textAlign: 'center',
-    marginBottom: hp('2.5%'),
     fontFamily: FONTS.openSans.bold,
   },
 
-  inputContainer: {
+  subtitle: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    fontFamily: FONTS.openSans.regular,
+    marginTop: hp('0.6%'),
+    marginBottom: hp('2.6%'),
+  },
+
+  loginButton: {
+    marginTop: hp('0.6%'),
+  },
+
+  errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: wp('2%'),
-    paddingHorizontal: wp('3%'),
-    marginBottom: hp('2%'),
-    height: hp('6.5%'),
-  },
-
-  input: {
-    flex: 1,
-    fontSize: wp('3.7%'),
-    color: '#000',
-    fontFamily: FONTS.openSans.regular,
-  },
-
-  button: {
-    backgroundColor: '#C93D14',
-    height: hp('6.5%'),
-    borderRadius: wp('2%'),
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: hp('1%'),
-  },
-
-  buttonText: {
-    color: '#fff',
-    fontSize: wp('4%'),
-    fontFamily: FONTS.openSans.semiBold,
-  },
-  errorText: {
-    color: '#D32F2F',
-    fontFamily: FONTS.openSans.semiBold,
-    fontSize: wp('3.2%'),
+    gap: wp('1.6%'),
     marginBottom: hp('1%'),
   },
 
-  footerText: {
-    marginTop: hp('3%'),
-    fontSize: wp('3%'),
-    color: '#aaa',
-    textAlign: 'center',
+  errorText: {
+    flex: 1,
+    color: COLORS.danger,
+    fontFamily: FONTS.openSans.semiBold,
+    fontSize: FONT_SIZES.sm,
   },
 
   forgotPasswordText: {
-    marginTop: hp('1.5%'),
-    fontSize: wp('3.1%'),
-    color: '#F57C00',
+    marginTop: hp('1.8%'),
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textSecondary,
     textAlign: 'center',
     fontFamily: FONTS.openSans.regular,
   },

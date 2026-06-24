@@ -1,0 +1,65 @@
+import React, { useEffect, useRef } from 'react';
+import { Animated, View, StyleSheet } from 'react-native';
+import { COLORS, RADIUS, CARD_BORDER, wp, hp } from '../styles/theme';
+
+export const SkeletonBlock = ({ width, height, radius = RADIUS.sm, style }) => {
+  const opacity = useRef(new Animated.Value(0.4)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 1, duration: 650, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.4, duration: 650, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [opacity]);
+
+  return (
+    <Animated.View
+      style={[
+        { width, height, borderRadius: radius, backgroundColor: '#E2E8F0', opacity },
+        style,
+      ]}
+    />
+  );
+};
+
+export const OrderCardSkeleton = () => (
+  <View style={styles.card}>
+    <View style={styles.row}>
+      <SkeletonBlock width="40%" height={16} />
+      <SkeletonBlock width={70} height={22} radius={RADIUS.pill} />
+    </View>
+    <SkeletonBlock width="60%" height={12} style={{ marginTop: hp('1.4%') }} />
+    <SkeletonBlock width="45%" height={12} style={{ marginTop: hp('0.8%') }} />
+    <View style={[styles.row, { marginTop: hp('1.8%') }]}>
+      <SkeletonBlock width={80} height={20} />
+      <SkeletonBlock width={100} height={38} radius={RADIUS.md} />
+    </View>
+  </View>
+);
+
+export const OrderListSkeleton = ({ count = 3 }) => (
+  <View>
+    {Array.from({ length: count }).map((_, index) => (
+      <OrderCardSkeleton key={index} />
+    ))}
+  </View>
+);
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: COLORS.card,
+    borderRadius: RADIUS.lg,
+    padding: wp('4%'),
+    marginBottom: hp('1.4%'),
+    ...CARD_BORDER,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+});

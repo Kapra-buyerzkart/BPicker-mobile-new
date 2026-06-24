@@ -7,14 +7,16 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
-  Modal,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
+import { wp, hp, COLORS, RADIUS, CARD_BORDER, FONT_SIZES } from '../styles/theme';
 import { FONTS } from '../styles/typography';
 import { getOrderDetails, updateOrderStatus } from '../services/ordersService';
+import AppHeader from '../components/AppHeader';
+import AppButton from '../components/AppButton';
+import ConfirmModal from '../components/ConfirmModal';
 
 const CHECKBOX_STORAGE_KEY_PREFIX = '@picker/order_checked_items';
 
@@ -64,6 +66,8 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     [categories]
   );
   const isAllChecked = allProducts.length > 0 && allProducts.every((p) => checkedItems[p.id]);
+  const checkedCount = allProducts.filter((p) => checkedItems[p.id]).length;
+  const progressPct = allProducts.length > 0 ? (checkedCount / allProducts.length) * 100 : 0;
 
   const getCheckboxStorageKey = (id) => `${CHECKBOX_STORAGE_KEY_PREFIX}_${id}`;
 
@@ -152,8 +156,8 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     });
   };
 
-  const InfoRow = ({ label, value }) => (
-    <View style={styles.infoRow}>
+  const InfoRow = ({ label, value, isLast }) => (
+    <View style={[styles.infoRow, isLast && styles.infoRowLast]}>
       <Text style={styles.infoLabel}>{label}</Text>
       <Text style={styles.infoValue}>{value}</Text>
     </View>
@@ -187,24 +191,19 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-left" size={26} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Order Details</Text>
-        <View style={{ width: 26 }} />
-      </View>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      <AppHeader title="Order Details" subtitle={orderDetails.orderNumber} onBackPress={() => navigation.goBack()} />
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#C93D14" />
+          <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={styles.loadingText}>Loading order details...</Text>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
           {!!errorMessage && (
             <View style={styles.errorCard}>
+              <Icon name="alert-circle-outline" size={wp('4.4%')} color={COLORS.danger} />
               <Text style={styles.errorText}>{errorMessage}</Text>
             </View>
           )}
@@ -215,8 +214,20 @@ const OrderDetailsScreen = ({ navigation, route }) => {
             <InfoRow label="Customer" value={orderDetails.customer} />
             <InfoRow label="Amount" value={`₹ ${Number(orderDetails.amount || 0).toFixed(2)}`} />
             <InfoRow label="Payment" value={orderDetails.payment} />
-            <InfoRow label="Phone" value={orderDetails.phone} />
+            <InfoRow label="Phone" value={orderDetails.phone} isLast />
           </View>
+
+          {!isReadOnly && allProducts.length > 0 && (
+            <View style={styles.progressCard}>
+              <View style={styles.progressHeaderRow}>
+                <Text style={styles.progressLabel}>Picking Progress</Text>
+                <Text style={styles.progressCount}>{checkedCount}/{allProducts.length}</Text>
+              </View>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: `${progressPct}%` }]} />
+              </View>
+            </View>
+          )}
 
           {categories.map((category) => (
             <View key={category.title}>
@@ -237,13 +248,13 @@ const OrderDetailsScreen = ({ navigation, route }) => {
                   </View>
 
                   {!isReadOnly && (
-                    <TouchableOpacity onPress={() => toggleCheck(product.id)}>
+                    <TouchableOpacity onPress={() => toggleCheck(product.id)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                       <Icon
                         name={checkedItems[product.id]
                           ? 'checkbox-marked'
                           : 'checkbox-blank-outline'}
                         size={26}
-                        color={checkedItems[product.id] ? '#4CAF50' : '#999'}
+                        color={checkedItems[product.id] ? COLORS.success : COLORS.textMuted}
                       />
                     </TouchableOpacity>
                   )}
@@ -253,65 +264,35 @@ const OrderDetailsScreen = ({ navigation, route }) => {
           ))}
 
           {!isReadOnly && (
-            <TouchableOpacity
+            <AppButton
+              label="COMPLETE PICKING"
+              variant="success"
               disabled={!isAllChecked}
-              style={[
-                styles.completeBtn,
-                { backgroundColor: isAllChecked ? '#4CAF50' : '#ccc' },
-              ]}
               onPress={() => {
                 setCompleteError('');
                 setIsCompleteConfirmVisible(true);
               }}
-            >
-              <Text style={styles.completeText}>COMPLETE PICKING</Text>
-            </TouchableOpacity>
+              style={styles.completeBtn}
+            />
           )}
         </ScrollView>
       )}
 
-      <Modal
+      <ConfirmModal
         visible={isCompleteConfirmVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsCompleteConfirmVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Confirm Packing</Text>
-            <Text style={styles.modalText}>
-              Mark order {orderDetails.orderNumber} as packed?
-            </Text>
-            {!!completeError && (
-              <Text style={styles.modalErrorText}>{completeError}</Text>
-            )}
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.modalCancelButton}
-                onPress={() => {
-                  if (!isCompleting) {
-                    setIsCompleteConfirmVisible(false);
-                  }
-                }}
-                disabled={isCompleting}
-              >
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalOkButton}
-                onPress={handleConfirmCompletePicking}
-                disabled={isCompleting}
-              >
-                {isCompleting ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.modalOkText}>OK</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        title="Confirm Packing"
+        message={`Mark order ${orderDetails.orderNumber} as packed?`}
+        error={completeError}
+        confirmLabel="OK"
+        cancelLabel="Cancel"
+        loading={isCompleting}
+        onCancel={() => {
+          if (!isCompleting) {
+            setIsCompleteConfirmVisible(false);
+          }
+        }}
+        onConfirm={handleConfirmCompletePicking}
+      />
     </SafeAreaView>
   );
 };
@@ -321,173 +302,136 @@ export default OrderDetailsScreen;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: wp('3.5%'),
-    paddingHorizontal: wp('4%'),
-    backgroundColor: '#C93D14',
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: wp('4.5%'),
-    fontFamily: FONTS.openSans.semiBold,
-    color: '#FFFFFF',
+    backgroundColor: COLORS.card,
   },
   container: {
     padding: wp('4%'),
+    backgroundColor: COLORS.background,
   },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: COLORS.background,
   },
   loadingText: {
     marginTop: hp('1%'),
-    color: '#666',
+    color: COLORS.textSecondary,
     fontFamily: FONTS.openSans.semiBold,
   },
   errorCard: {
-    backgroundColor: '#FDECEC',
-    borderColor: '#F5C2C0',
-    borderWidth: 1,
-    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp('2%'),
+    backgroundColor: COLORS.dangerLight,
+    borderRadius: RADIUS.md,
     padding: wp('3%'),
     marginBottom: hp('1.2%'),
   },
   errorText: {
-    color: '#A94442',
+    flex: 1,
+    color: '#B91C1C',
     fontFamily: FONTS.openSans.semiBold,
-    fontSize: wp('3.2%'),
+    fontSize: FONT_SIZES.sm,
   },
   orderInfoCard: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: hp('2%'),
+    backgroundColor: COLORS.card,
+    borderRadius: RADIUS.lg,
+    paddingHorizontal: wp('4%'),
+    marginBottom: hp('1.6%'),
+    ...CARD_BORDER,
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 6,
+    alignItems: 'center',
+    paddingVertical: hp('1.2%'),
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  infoRowLast: {
+    borderBottomWidth: 0,
   },
   infoLabel: {
-    color: '#777',
-    fontSize: wp('3.5%'),
+    color: COLORS.textSecondary,
+    fontSize: FONT_SIZES.sm,
     fontFamily: FONTS.openSans.regular,
   },
   infoValue: {
-    fontSize: wp('3.7%'),
-    fontFamily: FONTS.openSans.regular,
-    color: 'black',
+    fontSize: FONT_SIZES.md,
+    fontFamily: FONTS.openSans.semiBold,
+    color: COLORS.textPrimary,
     marginLeft: wp('2%'),
     textAlign: 'right',
     flex: 1,
   },
+  progressCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: RADIUS.lg,
+    padding: wp('4%'),
+    marginBottom: hp('1.8%'),
+    ...CARD_BORDER,
+  },
+  progressHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: hp('1%'),
+  },
+  progressLabel: {
+    color: COLORS.textPrimary,
+    fontSize: FONT_SIZES.sm,
+    fontFamily: FONTS.openSans.semiBold,
+  },
+  progressCount: {
+    color: COLORS.primary,
+    fontSize: FONT_SIZES.sm,
+    fontFamily: FONTS.openSans.bold,
+  },
+  progressTrack: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.background,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.success,
+  },
   categoryTitle: {
-    fontSize: wp('4%'),
-    marginVertical: hp('1.5%'),
-    color: 'black',
+    fontSize: FONT_SIZES.lg,
+    marginVertical: hp('1.4%'),
+    color: COLORS.textPrimary,
     fontFamily: FONTS.openSans.semiBold,
   },
   productCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    padding: wp('1%'),
-    borderRadius: 8,
+    backgroundColor: COLORS.card,
+    padding: wp('2.4%'),
+    borderRadius: RADIUS.md,
     marginBottom: hp('1%'),
+    ...CARD_BORDER,
   },
   productImage: {
     width: wp('14%'),
     height: wp('14%'),
+    borderRadius: RADIUS.sm,
     marginRight: wp('3%'),
   },
   productName: {
-    fontSize: wp('3.6%'),
-    fontFamily: FONTS.openSans.regular,
-    color: 'black',
+    fontSize: FONT_SIZES.md,
+    fontFamily: FONTS.openSans.semiBold,
+    color: COLORS.textPrimary,
   },
   productMeta: {
-    color: '#777',
-    fontSize: wp('3%'),
+    color: COLORS.textSecondary,
+    fontSize: FONT_SIZES.sm,
     fontFamily: FONTS.openSans.regular,
+    marginTop: 2,
   },
   completeBtn: {
-    marginTop: hp('3%'),
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  completeText: {
-    color: '#ffffff',
-    fontSize: wp('4%'),
-    fontFamily: FONTS.openSans.semiBold,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: wp('8%'),
-  },
-  modalCard: {
-    width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: wp('5%'),
-  },
-  modalTitle: {
-    textAlign: 'center',
-    color: '#1A1A1A',
-    fontFamily: FONTS.openSans.semiBold,
-    fontSize: wp('4.2%'),
-    marginBottom: hp('1%'),
-  },
-  modalText: {
-    textAlign: 'center',
-    color: '#333',
-    fontFamily: FONTS.openSans.regular,
-    fontSize: wp('3.6%'),
+    marginTop: hp('2%'),
     marginBottom: hp('2%'),
-  },
-  modalErrorText: {
-    color: '#D32F2F',
-    textAlign: 'center',
-    fontFamily: FONTS.openSans.semiBold,
-    marginBottom: hp('1%'),
-    fontSize: wp('3.2%'),
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  modalCancelButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#C93D14',
-    borderRadius: 8,
-    paddingVertical: hp('1.2%'),
-    marginRight: wp('2%'),
-    alignItems: 'center',
-  },
-  modalCancelText: {
-    color: '#C93D14',
-    fontFamily: FONTS.openSans.semiBold,
-  },
-  modalOkButton: {
-    flex: 1,
-    backgroundColor: '#C93D14',
-    borderRadius: 8,
-    paddingVertical: hp('1.2%'),
-    marginLeft: wp('2%'),
-    alignItems: 'center',
-  },
-  modalOkText: {
-    color: '#fff',
-    fontFamily: FONTS.openSans.semiBold,
   },
 });
