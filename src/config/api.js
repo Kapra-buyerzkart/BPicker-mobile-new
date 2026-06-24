@@ -3,6 +3,6 @@ export const API_CONFIG = {
   // Android emulator: 10.0.2.2 maps to localhost of your dev machine.
   BASE_URL: 'https://core.kapradaily.com/api/V1',
   // Base URL for item/product images returned as relative paths by the API.
-  IMAGE_BASE_URL: 'https://staging.kapradaily.com/',
+  IMAGE_BASE_URL: 'https://backend.kapradaily.com/',
   TIMEOUT_MS: 15000,
 };
