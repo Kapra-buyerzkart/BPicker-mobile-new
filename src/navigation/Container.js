@@ -11,8 +11,10 @@ import DispatchedScreen from '../screens/DispatchedScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import OrderDetailsScreen from '../screens/OrderDetailsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import IncomingOrderScreen from '../screens/IncomingOrderScreen';
 import { getStoredUser, restoreAuthSession } from '../services/authService';
 import { oneSignalLogin, requestPushPermissionIfNeeded } from '../services/oneSignalService';
+import { navigationRef, flushPendingIncomingOrder } from './navigationRef';
 
 const Stack = createNativeStackNavigator();
 
@@ -78,7 +80,7 @@ export default function App() {
     }
 
     return (
-        <NavigationContainer>
+        <NavigationContainer ref={navigationRef} onReady={flushPendingIncomingOrder}>
             <Stack.Navigator
                 initialRouteName={initialRouteName}
                 screenOptions={{
@@ -96,6 +98,11 @@ export default function App() {
                 <Stack.Screen name="Dispatched" component={DispatchedScreen} />
                 <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
                 <Stack.Screen name="Profile" component={ProfileScreen} />
+                <Stack.Screen
+                    name="IncomingOrder"
+                    component={IncomingOrderScreen}
+                    options={{ presentation: 'transparentModal', animation: 'fade' }}
+                />
             </Stack.Navigator>
         </NavigationContainer>
     );

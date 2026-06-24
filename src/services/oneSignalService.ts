@@ -6,6 +6,17 @@ import {
   type NotificationWillDisplayEvent,
 } from 'react-native-onesignal';
 import { ONE_SIGNAL_APP_ID, isValidOneSignalAppId } from '../config/oneSignal';
+import { navigateToIncomingOrder } from '../navigation/navigationRef';
+
+const INCOMING_ORDER_NOTIFICATION_TYPE = 'incoming_order';
+
+function isIncomingOrderPayload(additionalData: unknown): boolean {
+  return (
+    !!additionalData &&
+    typeof additionalData === 'object' &&
+    (additionalData as Record<string, unknown>).type === INCOMING_ORDER_NOTIFICATION_TYPE
+  );
+}
 
 let hasInitialized = false;
 let desiredExternalId: string | null = null;
@@ -154,11 +165,22 @@ export function initOneSignal(): void {
 
   OneSignal.Notifications.addEventListener('foregroundWillDisplay', (event: NotificationWillDisplayEvent) => {
     const notification = event.getNotification();
+
+    if (isIncomingOrderPayload(notification?.additionalData)) {
+      // Rider order alerts get the full-screen in-app UI instead of a system notification.
+      event.preventDefault();
+      navigateToIncomingOrder(notification.additionalData);
+      return;
+    }
+
     const incrementBy = parseBadgeCount(notification?.badgeIncrement) || 1;
     void incrementNotificationBadgeCount(incrementBy);
   });
 
-  OneSignal.Notifications.addEventListener('click', (_event: NotificationClickEvent) => {
+  OneSignal.Notifications.addEventListener('click', (event: NotificationClickEvent) => {
+    if (isIncomingOrderPayload(event.notification?.additionalData)) {
+      navigateToIncomingOrder(event.notification.additionalData);
+    }
     void clearNotificationBadgeCount();
   });
 }
