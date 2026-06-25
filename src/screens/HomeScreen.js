@@ -133,6 +133,9 @@ const HomeScreen = ({ navigation, route }) => {
     if (refresh) {
       setIsRefreshing(true);
     } else {
+      // Reset scroll position so the chrome overlay and list padding stay in
+      // sync when the FlatList remounts after a tab switch.
+      scrollY.value = 0;
       setIsLoading(true);
     }
 

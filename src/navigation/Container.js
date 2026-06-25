@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { View } from 'react-native';
 import {
     NavigationContainer,
     DefaultTheme,
@@ -18,12 +18,14 @@ import OrderDetailsScreen from '../screens/OrderDetailsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import { getStoredUser, restoreAuthSession } from '../services/authService';
 import { oneSignalLogin, requestPushPermissionIfNeeded } from '../services/oneSignalService';
+import SplashScreen from '../components/SplashScreen';
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
     const { colors, isDark } = useTheme();
     const [isBootstrapping, setIsBootstrapping] = useState(true);
+    const [splashVisible, setSplashVisible] = useState(true);
     const [initialRouteName, setInitialRouteName] = useState('Login');
 
     const navigationTheme = useMemo(() => {
@@ -91,34 +93,42 @@ export default function App() {
         };
     }, []);
 
+    // Called when the splash exit animation finishes — unmount the overlay.
+    const handleSplashComplete = useCallback(() => {
+        setSplashVisible(false);
+    }, []);
+
+    // While bootstrapping, only show the splash screen.
     if (isBootstrapping) {
-        return (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-                <ActivityIndicator size="large" color={colors.primaryDark} />
-            </View>
-        );
+        return <SplashScreen isReady={false} onAnimationComplete={handleSplashComplete} />;
     }
 
     return (
-        <NavigationContainer theme={navigationTheme}>
-            <Stack.Navigator
-                initialRouteName={initialRouteName}
-                screenOptions={{
-                    headerShown: false
-                }}
-            >
-                {/* Auth Screens */}
-                <Stack.Screen name="Login" component={LoginScreen} />
-                <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+        <View style={{ flex: 1 }}>
+            <NavigationContainer theme={navigationTheme}>
+                <Stack.Navigator
+                    initialRouteName={initialRouteName}
+                    screenOptions={{
+                        headerShown: false
+                    }}
+                >
+                    {/* Auth Screens */}
+                    <Stack.Screen name="Login" component={LoginScreen} />
+                    <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
 
-                {/* App Screens */}
-                <Stack.Screen name="Home" component={HomeScreen} />
-                <Stack.Screen name="Picking" component={PickingScreen} />
-                <Stack.Screen name="Packed" component={PackedScreen} />
-                <Stack.Screen name="Dispatched" component={DispatchedScreen} />
-                <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
-                <Stack.Screen name="Profile" component={ProfileScreen} />
-            </Stack.Navigator>
-        </NavigationContainer>
+                    {/* App Screens */}
+                    <Stack.Screen name="Home" component={HomeScreen} />
+                    <Stack.Screen name="Picking" component={PickingScreen} />
+                    <Stack.Screen name="Packed" component={PackedScreen} />
+                    <Stack.Screen name="Dispatched" component={DispatchedScreen} />
+                    <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
+                    <Stack.Screen name="Profile" component={ProfileScreen} />
+                </Stack.Navigator>
+            </NavigationContainer>
+            {splashVisible && (
+                <SplashScreen isReady={true} onAnimationComplete={handleSplashComplete} />
+            )}
+        </View>
     );
 }
+
