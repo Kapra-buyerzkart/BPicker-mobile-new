@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     View,
     Text,
@@ -9,7 +9,8 @@ import {
     ScrollView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { wp, hp, COLORS, RADIUS, CARD_BORDER, FONT_SIZES } from '../styles/theme';
+import { wp, hp, RADIUS, FONT_SIZES } from '../styles/theme';
+import { useTheme } from '../theme';
 import { FONTS } from '../styles/typography';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { changePickerPassword } from '../services/authService';
@@ -19,6 +20,8 @@ import AppButton from '../components/AppButton';
 import ConfirmModal from '../components/ConfirmModal';
 
 const ChangePasswordScreen = ({ navigation }) => {
+    const { colors } = useTheme();
+    const styles = useMemo(() => makeStyles(colors), [colors]);
     const [showOldPassword, setShowOldPassword] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -78,7 +81,7 @@ const ChangePasswordScreen = ({ navigation }) => {
             <Icon
                 name={visible ? 'eye-off-outline' : 'eye-outline'}
                 size={wp('5%')}
-                color={visible ? COLORS.primary : COLORS.textMuted}
+                color={visible ? colors.primary : colors.textMuted}
             />
         </TouchableOpacity>
     );
@@ -96,7 +99,7 @@ const ChangePasswordScreen = ({ navigation }) => {
                     contentContainerStyle={styles.scroll}>
                     <View style={styles.card}>
                         <View style={styles.iconCircle}>
-                            <Icon name="lock-reset" size={wp('8%')} color={COLORS.primary} />
+                            <Icon name="lock-reset" size={wp('8%')} color={colors.primary} />
                         </View>
 
                         <AppTextInput
@@ -125,7 +128,7 @@ const ChangePasswordScreen = ({ navigation }) => {
 
                         {!!errorMessage && (
                             <View style={styles.errorBox}>
-                                <Icon name="alert-circle-outline" size={wp('4.4%')} color={COLORS.danger} />
+                                <Icon name="alert-circle-outline" size={wp('4.4%')} color={colors.danger} />
                                 <Text style={styles.errorText}>{errorMessage}</Text>
                             </View>
                         )}
@@ -163,14 +166,14 @@ const ChangePasswordScreen = ({ navigation }) => {
 
 export default ChangePasswordScreen;
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: COLORS.card,
+        backgroundColor: colors.card,
     },
     container: {
         flex: 1,
-        backgroundColor: COLORS.background,
+        backgroundColor: colors.background,
     },
 
     scroll: {
@@ -182,18 +185,19 @@ const styles = StyleSheet.create({
 
     card: {
         width: '100%',
-        backgroundColor: COLORS.card,
+        backgroundColor: colors.card,
         borderRadius: RADIUS.xl,
         padding: wp('6%'),
         alignItems: 'center',
-        ...CARD_BORDER,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
 
     iconCircle: {
         width: wp('16%'),
         height: wp('16%'),
         borderRadius: wp('8%'),
-        backgroundColor: '#FFEDE3',
+        backgroundColor: colors.primarySoft,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: hp('2.2%'),
@@ -209,7 +213,7 @@ const styles = StyleSheet.create({
 
     errorText: {
         flex: 1,
-        color: COLORS.danger,
+        color: colors.danger,
         fontFamily: FONTS.openSans.semiBold,
         fontSize: FONT_SIZES.sm,
     },

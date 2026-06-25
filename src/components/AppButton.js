@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import {
   Animated,
   Text,
@@ -6,16 +6,17 @@ import {
   StyleSheet,
   Pressable,
 } from 'react-native';
-import { COLORS, RADIUS, FONT_SIZES, SPACING, hp } from '../styles/theme';
+import { RADIUS, FONT_SIZES, SPACING, hp } from '../styles/theme';
 import { FONTS } from '../styles/typography';
+import { useTheme } from '../theme';
 
-const VARIANTS = {
-  primary: { bg: COLORS.primary, fg: COLORS.white, border: 'transparent' },
-  secondary: { bg: COLORS.white, fg: COLORS.primary, border: COLORS.primary },
-  success: { bg: COLORS.success, fg: COLORS.white, border: 'transparent' },
-  danger: { bg: COLORS.white, fg: COLORS.danger, border: COLORS.danger },
-  disabledLook: { bg: '#E5E7EB', fg: COLORS.textMuted, border: 'transparent' },
-};
+const getVariants = (colors) => ({
+  primary: { bg: colors.primary, fg: colors.white, border: 'transparent' },
+  secondary: { bg: colors.card, fg: colors.primary, border: colors.primary },
+  success: { bg: colors.success, fg: colors.white, border: 'transparent' },
+  danger: { bg: colors.card, fg: colors.danger, border: colors.danger },
+  disabledLook: { bg: colors.disabledBackground, fg: colors.textMuted, border: 'transparent' },
+});
 
 const AppButton = ({
   label,
@@ -28,9 +29,13 @@ const AppButton = ({
   style,
   textStyle,
 }) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const variants = useMemo(() => getVariants(colors), [colors]);
+
   const scale = useRef(new Animated.Value(1)).current;
   const isDisabled = disabled || loading;
-  const colors = isDisabled && variant === 'primary' ? VARIANTS.disabledLook : VARIANTS[variant] || VARIANTS.primary;
+  const variantColors = isDisabled && variant === 'primary' ? variants.disabledLook : variants[variant] || variants.primary;
   const height = size === 'sm' ? hp('5.2%') : hp('6.4%');
 
   const animateTo = (value) => {
@@ -52,20 +57,20 @@ const AppButton = ({
         style={[
           styles.base,
           {
-            backgroundColor: colors.bg,
-            borderColor: colors.border,
-            borderWidth: colors.border === 'transparent' ? 0 : 1.5,
+            backgroundColor: variantColors.bg,
+            borderColor: variantColors.border,
+            borderWidth: variantColors.border === 'transparent' ? 0 : 1.5,
             height,
             opacity: isDisabled && variant !== 'primary' ? 0.5 : 1,
           },
         ]}
       >
         {loading ? (
-          <ActivityIndicator color={colors.fg} />
+          <ActivityIndicator color={variantColors.fg} />
         ) : (
           <>
             {icon}
-            <Text style={[styles.label, { color: colors.fg }, textStyle]}>{label}</Text>
+            <Text style={[styles.label, { color: variantColors.fg }, textStyle]}>{label}</Text>
           </>
         )}
       </Pressable>
@@ -75,7 +80,7 @@ const AppButton = ({
 
 export default AppButton;
 
-const styles = StyleSheet.create({
+const makeStyles = () => StyleSheet.create({
   wrapper: {
     alignItems: 'stretch',
   },

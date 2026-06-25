@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,8 @@ import {
   StatusBar,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { wp, hp, COLORS, RADIUS, CARD_BORDER, FONT_SIZES } from '../styles/theme';
+import { wp, hp, RADIUS, FONT_SIZES } from '../styles/theme';
+import { useTheme } from '../theme';
 import { FONTS } from '../styles/typography';
 import { loginPickerAgent } from '../services/authService';
 import {
@@ -21,6 +22,8 @@ import AppTextInput from '../components/AppTextInput';
 import AppButton from '../components/AppButton';
 
 const LoginScreen = ({ navigation }) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [showPassword, setShowPassword] = useState(false);
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -99,14 +102,14 @@ const LoginScreen = ({ navigation }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
       >
         <View style={styles.logoCircle}>
-          <Icon name="scooter" size={wp('10%')} color={COLORS.white} />
+          <Icon name="scooter" size={wp('10%')} color={colors.white} />
         </View>
 
         <View style={styles.card}>
@@ -119,7 +122,7 @@ const LoginScreen = ({ navigation }) => {
             maxLength={10}
             value={phone}
             onChangeText={text => setPhone(text.replace(/\D/g, ''))}
-            rightIcon={<Icon name="cellphone" size={wp('5%')} color={COLORS.textMuted} />}
+            rightIcon={<Icon name="cellphone" size={wp('5%')} color={colors.textMuted} />}
           />
 
           <AppTextInput
@@ -132,7 +135,7 @@ const LoginScreen = ({ navigation }) => {
                 <Icon
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={wp('5%')}
-                  color={showPassword ? COLORS.primary : COLORS.textMuted}
+                  color={showPassword ? colors.primary : colors.textMuted}
                 />
               </TouchableOpacity>
             }
@@ -140,7 +143,7 @@ const LoginScreen = ({ navigation }) => {
 
           {!!errorMessage && (
             <View style={styles.errorBox}>
-              <Icon name="alert-circle-outline" size={wp('4.4%')} color={COLORS.danger} />
+              <Icon name="alert-circle-outline" size={wp('4.4%')} color={colors.danger} />
               <Text style={styles.errorText}>{errorMessage}</Text>
             </View>
           )}
@@ -164,10 +167,10 @@ const LoginScreen = ({ navigation }) => {
 
 export default LoginScreen;
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.primary,
+    backgroundColor: colors.primary,
   },
 
   scroll: {
@@ -181,7 +184,7 @@ const styles = StyleSheet.create({
     width: wp('20%'),
     height: wp('20%'),
     borderRadius: wp('10%'),
-    backgroundColor: COLORS.secondary,
+    backgroundColor: colors.secondary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: hp('2.5%'),
@@ -189,22 +192,23 @@ const styles = StyleSheet.create({
 
   card: {
     width: wp('90%'),
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: RADIUS.xl,
     padding: wp('6%'),
-    ...CARD_BORDER,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
 
   title: {
     fontSize: FONT_SIZES.xxl,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     textAlign: 'center',
     fontFamily: FONTS.openSans.bold,
   },
 
   subtitle: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     fontFamily: FONTS.openSans.regular,
     marginTop: hp('0.6%'),
@@ -224,7 +228,7 @@ const styles = StyleSheet.create({
 
   errorText: {
     flex: 1,
-    color: COLORS.danger,
+    color: colors.danger,
     fontFamily: FONTS.openSans.semiBold,
     fontSize: FONT_SIZES.sm,
   },
@@ -232,7 +236,7 @@ const styles = StyleSheet.create({
   forgotPasswordText: {
     marginTop: hp('1.8%'),
     fontSize: FONT_SIZES.xs,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     fontFamily: FONTS.openSans.regular,
   },

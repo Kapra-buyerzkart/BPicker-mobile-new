@@ -11,7 +11,8 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { wp, hp, COLORS, RADIUS, CARD_BORDER, FONT_SIZES } from '../styles/theme';
+import { wp, hp, RADIUS, FONT_SIZES } from '../styles/theme';
+import { useTheme } from '../theme';
 import { FONTS } from '../styles/typography';
 import { getOrderDetails, updateOrderStatus } from '../services/ordersService';
 import AppHeader from '../components/AppHeader';
@@ -37,6 +38,8 @@ const groupItemsByCategory = (items) => {
 };
 
 const OrderDetailsScreen = ({ navigation, route }) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const orderId = route?.params?.orderId;
   const orderNumberFromRoute = route?.params?.orderNumber;
   const isReadOnly = route?.params?.mode === 'view';
@@ -196,14 +199,14 @@ const OrderDetailsScreen = ({ navigation, route }) => {
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Loading order details...</Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
           {!!errorMessage && (
             <View style={styles.errorCard}>
-              <Icon name="alert-circle-outline" size={wp('4.4%')} color={COLORS.danger} />
+              <Icon name="alert-circle-outline" size={wp('4.4%')} color={colors.danger} />
               <Text style={styles.errorText}>{errorMessage}</Text>
             </View>
           )}
@@ -254,7 +257,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
                           ? 'checkbox-marked'
                           : 'checkbox-blank-outline'}
                         size={26}
-                        color={checkedItems[product.id] ? COLORS.success : COLORS.textMuted}
+                        color={checkedItems[product.id] ? colors.success : colors.textMuted}
                       />
                     </TouchableOpacity>
                   )}
@@ -299,47 +302,48 @@ const OrderDetailsScreen = ({ navigation, route }) => {
 
 export default OrderDetailsScreen;
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
   },
   container: {
     padding: wp('4%'),
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   loadingText: {
     marginTop: hp('1%'),
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontFamily: FONTS.openSans.semiBold,
   },
   errorCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: wp('2%'),
-    backgroundColor: COLORS.dangerLight,
+    backgroundColor: colors.dangerLight,
     borderRadius: RADIUS.md,
     padding: wp('3%'),
     marginBottom: hp('1.2%'),
   },
   errorText: {
     flex: 1,
-    color: '#B91C1C',
+    color: colors.danger,
     fontFamily: FONTS.openSans.semiBold,
     fontSize: FONT_SIZES.sm,
   },
   orderInfoCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: RADIUS.lg,
     paddingHorizontal: wp('4%'),
     marginBottom: hp('1.6%'),
-    ...CARD_BORDER,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   infoRow: {
     flexDirection: 'row',
@@ -347,30 +351,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: hp('1.2%'),
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: colors.border,
   },
   infoRowLast: {
     borderBottomWidth: 0,
   },
   infoLabel: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: FONT_SIZES.sm,
     fontFamily: FONTS.openSans.regular,
   },
   infoValue: {
     fontSize: FONT_SIZES.md,
     fontFamily: FONTS.openSans.semiBold,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     marginLeft: wp('2%'),
     textAlign: 'right',
     flex: 1,
   },
   progressCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: RADIUS.lg,
     padding: wp('4%'),
     marginBottom: hp('1.8%'),
-    ...CARD_BORDER,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   progressHeaderRow: {
     flexDirection: 'row',
@@ -378,40 +383,41 @@ const styles = StyleSheet.create({
     marginBottom: hp('1%'),
   },
   progressLabel: {
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fontSize: FONT_SIZES.sm,
     fontFamily: FONTS.openSans.semiBold,
   },
   progressCount: {
-    color: COLORS.primary,
+    color: colors.primary,
     fontSize: FONT_SIZES.sm,
     fontFamily: FONTS.openSans.bold,
   },
   progressTrack: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
     overflow: 'hidden',
   },
   progressFill: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: COLORS.success,
+    backgroundColor: colors.success,
   },
   categoryTitle: {
     fontSize: FONT_SIZES.lg,
     marginVertical: hp('1.4%'),
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fontFamily: FONTS.openSans.semiBold,
   },
   productCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     padding: wp('2.4%'),
     borderRadius: RADIUS.md,
     marginBottom: hp('1%'),
-    ...CARD_BORDER,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   productImage: {
     width: wp('14%'),
@@ -422,10 +428,10 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: FONT_SIZES.md,
     fontFamily: FONTS.openSans.semiBold,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
   },
   productMeta: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: FONT_SIZES.sm,
     fontFamily: FONTS.openSans.regular,
     marginTop: 2,

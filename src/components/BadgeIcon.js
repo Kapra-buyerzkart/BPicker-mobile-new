@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { COLORS } from '../styles/theme';
+import { useTheme } from '../theme';
 
 export default function BadgeIcon({ count = 0, children, max = 99 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const normalizedCount = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
   const displayCount = normalizedCount > max ? `${max}+` : String(normalizedCount);
 
@@ -18,7 +20,7 @@ export default function BadgeIcon({ count = 0, children, max = 99 }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   container: {
     position: 'relative',
     alignItems: 'center',
@@ -32,16 +34,15 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 8,
     paddingHorizontal: 4,
-    backgroundColor: COLORS.danger,
+    backgroundColor: colors.danger,
     alignItems: 'center',
     justifyContent: 'center',
   },
   badgeText: {
-    color: '#fff',
+    color: colors.white,
     fontSize: 10,
     fontWeight: '700',
     includeFontPadding: false,
     textAlignVertical: 'center',
   },
 });
-

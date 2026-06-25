@@ -1,15 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     ScrollView,
     ActivityIndicator,
+    Switch,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { wp, hp, COLORS, RADIUS, CARD_BORDER, FONT_SIZES } from '../styles/theme';
+import { wp, hp, RADIUS, FONT_SIZES } from '../styles/theme';
 import { FONTS } from '../styles/typography';
+import { useTheme } from '../theme';
 import { getPickerProfile, logoutPickerAgent } from '../services/authService';
 import { oneSignalLogout } from '../services/oneSignalService';
 import AppHeader from '../components/AppHeader';
@@ -24,6 +26,9 @@ const PROFILE_FIELDS = [
 ];
 
 const ProfileScreen = ({ navigation }) => {
+    const { colors, isDark, toggleTheme } = useTheme();
+    const styles = useMemo(() => makeStyles(colors), [colors]);
+
     const [isProfileLoading, setIsProfileLoading] = useState(true);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
@@ -119,7 +124,7 @@ const ProfileScreen = ({ navigation }) => {
 
                 {isProfileLoading ? (
                     <View style={styles.loaderBox}>
-                        <ActivityIndicator size="large" color={COLORS.primary} />
+                        <ActivityIndicator size="large" color={colors.primary} />
                         <Text style={styles.loadingText}>Loading profile...</Text>
                     </View>
                 ) : (
@@ -133,7 +138,7 @@ const ProfileScreen = ({ navigation }) => {
                                 ]}
                             >
                                 <View style={styles.infoIconCircle}>
-                                    <Icon name={field.icon} size={wp('4.6%')} color={COLORS.primary} />
+                                    <Icon name={field.icon} size={wp('4.6%')} color={colors.primary} />
                                 </View>
                                 <View style={styles.infoTextWrap}>
                                     <Text style={styles.infoLabel}>{field.label}</Text>
@@ -146,9 +151,28 @@ const ProfileScreen = ({ navigation }) => {
                     </View>
                 )}
 
+                {/* Settings */}
+                <View style={styles.card}>
+                    <View style={[styles.infoRow, styles.infoRowLast]}>
+                        <View style={styles.infoIconCircle}>
+                            <Icon name="moon-waning-crescent" size={wp('4.6%')} color={colors.primary} />
+                        </View>
+                        <View style={styles.infoTextWrap}>
+                            <Text style={styles.infoValue}>Dark Mode</Text>
+                        </View>
+                        <Switch
+                            value={isDark}
+                            onValueChange={toggleTheme}
+                            trackColor={{ false: colors.border, true: colors.primary }}
+                            thumbColor={colors.white}
+                            ios_backgroundColor={colors.border}
+                        />
+                    </View>
+                </View>
+
                 {!!errorMessage && (
                     <View style={styles.errorBox}>
-                        <Icon name="alert-circle-outline" size={wp('4.4%')} color={COLORS.danger} />
+                        <Icon name="alert-circle-outline" size={wp('4.4%')} color={colors.danger} />
                         <Text style={styles.errorText}>{errorMessage}</Text>
                     </View>
                 )}
@@ -189,15 +213,15 @@ const ProfileScreen = ({ navigation }) => {
 
 export default ProfileScreen;
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: COLORS.card,
+        backgroundColor: colors.card,
     },
 
     scroll: {
         flexGrow: 1,
-        backgroundColor: COLORS.background,
+        backgroundColor: colors.background,
         padding: wp('5%'),
         alignItems: 'center',
     },
@@ -206,25 +230,26 @@ const styles = StyleSheet.create({
         width: wp('20%'),
         height: wp('20%'),
         borderRadius: wp('10%'),
-        backgroundColor: COLORS.primary,
+        backgroundColor: colors.primary,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: hp('2.4%'),
     },
 
     avatarInitial: {
-        color: COLORS.white,
+        color: colors.white,
         fontSize: FONT_SIZES.xxl,
         fontFamily: FONTS.openSans.bold,
     },
 
     card: {
         width: '100%',
-        backgroundColor: COLORS.card,
+        backgroundColor: colors.card,
         borderRadius: RADIUS.lg,
         paddingHorizontal: wp('4%'),
         marginBottom: hp('2%'),
-        ...CARD_BORDER,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
 
     infoRow: {
@@ -232,7 +257,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: hp('1.6%'),
         borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
+        borderBottomColor: colors.divider,
     },
 
     infoRowLast: {
@@ -243,7 +268,7 @@ const styles = StyleSheet.create({
         width: wp('9%'),
         height: wp('9%'),
         borderRadius: wp('4.5%'),
-        backgroundColor: '#FFEDE3',
+        backgroundColor: colors.primarySoft,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: wp('3%'),
@@ -254,13 +279,13 @@ const styles = StyleSheet.create({
     },
 
     infoLabel: {
-        color: COLORS.textSecondary,
+        color: colors.textSecondary,
         fontSize: FONT_SIZES.xs,
         fontFamily: FONTS.openSans.regular,
     },
 
     infoValue: {
-        color: COLORS.textPrimary,
+        color: colors.textPrimary,
         fontSize: FONT_SIZES.md,
         fontFamily: FONTS.openSans.semiBold,
         marginTop: 2,
@@ -275,7 +300,7 @@ const styles = StyleSheet.create({
 
     loadingText: {
         marginTop: hp('1%'),
-        color: COLORS.textSecondary,
+        color: colors.textSecondary,
         fontFamily: FONTS.openSans.semiBold,
         fontSize: FONT_SIZES.sm,
     },
@@ -290,7 +315,7 @@ const styles = StyleSheet.create({
 
     errorText: {
         flex: 1,
-        color: COLORS.danger,
+        color: colors.danger,
         fontFamily: FONTS.openSans.semiBold,
         fontSize: FONT_SIZES.sm,
     },

@@ -1,30 +1,35 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, RADIUS, FONT_SIZES, wp } from '../styles/theme';
+import { RADIUS, FONT_SIZES, wp } from '../styles/theme';
 import { FONTS } from '../styles/typography';
+import { useTheme } from '../theme';
 
-const STATUS_CONFIG = {
-  pending: { label: 'Pending', bg: COLORS.warningLight, fg: '#B45309', dot: COLORS.warning },
-  picking: { label: 'Picking', bg: '#FFE8D6', fg: '#B7491F', dot: COLORS.secondary },
-  packed: { label: 'Packed', bg: COLORS.infoLight, fg: '#1D4ED8', dot: COLORS.info },
+const getStatusConfig = (colors, isDark) => ({
+  pending: { label: 'Pending', bg: colors.warningLight, fg: '#B45309', dot: colors.warning },
+  picking: { label: 'Picking', bg: '#FFE8D6', fg: '#B7491F', dot: colors.secondary },
+  packed: { label: 'Packed', bg: colors.infoLight, fg: isDark ? '#93C5FD' : '#1D4ED8', dot: colors.info },
   dispatched: { label: 'Dispatched', bg: '#E0E7FF', fg: '#4338CA', dot: '#6366F1' },
-  online: { label: 'Online', bg: COLORS.successLight, fg: '#15803D', dot: COLORS.success },
-  offline: { label: 'Offline', bg: '#F1F5F9', fg: COLORS.textSecondary, dot: COLORS.textMuted },
+  online: { label: 'Online', bg: colors.successLight, fg: '#15803D', dot: colors.success },
+  offline: { label: 'Offline', bg: colors.surface, fg: colors.textSecondary, dot: colors.textMuted },
   assigned: { label: 'Assigned', bg: '#E0E7FF', fg: '#4338CA', dot: '#6366F1' },
-  arrived: { label: 'Arrived', bg: COLORS.warningLight, fg: '#B45309', dot: COLORS.warning },
-  pickedup: { label: 'Picked Up', bg: COLORS.infoLight, fg: '#1D4ED8', dot: COLORS.info },
-  delivered: { label: 'Delivered', bg: COLORS.successLight, fg: '#15803D', dot: COLORS.success },
-  cancelled: { label: 'Cancelled', bg: COLORS.dangerLight, fg: '#B91C1C', dot: COLORS.danger },
-};
+  arrived: { label: 'Arrived', bg: colors.warningLight, fg: '#B45309', dot: colors.warning },
+  pickedup: { label: 'Picked Up', bg: colors.infoLight, fg: '#1D4ED8', dot: colors.info },
+  delivered: { label: 'Delivered', bg: colors.successLight, fg: '#15803D', dot: colors.success },
+  cancelled: { label: 'Cancelled', bg: colors.dangerLight, fg: '#B91C1C', dot: colors.danger },
+});
 
 const normalizeKey = (status) => String(status || '').toLowerCase().replace(/[\s_-]/g, '');
 
 const StatusBadge = ({ status, label, style }) => {
-  const config = STATUS_CONFIG[normalizeKey(status)] || {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const statusConfig = useMemo(() => getStatusConfig(colors, isDark), [colors, isDark]);
+
+  const config = statusConfig[normalizeKey(status)] || {
     label: label || status || '-',
-    bg: '#F1F5F9',
-    fg: COLORS.textSecondary,
-    dot: COLORS.textMuted,
+    bg: colors.surface,
+    fg: colors.textSecondary,
+    dot: colors.textMuted,
   };
 
   return (
@@ -37,7 +42,7 @@ const StatusBadge = ({ status, label, style }) => {
 
 export default StatusBadge;
 
-const styles = StyleSheet.create({
+const makeStyles = () => StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',

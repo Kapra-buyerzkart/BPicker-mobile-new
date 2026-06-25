@@ -1,7 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import {
+    NavigationContainer,
+    DefaultTheme,
+    DarkTheme,
+} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useTheme } from '../theme';
 
 import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
@@ -17,8 +22,25 @@ import { oneSignalLogin, requestPushPermissionIfNeeded } from '../services/oneSi
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+    const { colors, isDark } = useTheme();
     const [isBootstrapping, setIsBootstrapping] = useState(true);
     const [initialRouteName, setInitialRouteName] = useState('Login');
+
+    const navigationTheme = useMemo(() => {
+        const base = isDark ? DarkTheme : DefaultTheme;
+        return {
+            ...base,
+            colors: {
+                ...base.colors,
+                background: colors.background,
+                card: colors.card,
+                text: colors.text,
+                border: colors.border,
+                primary: colors.primary,
+                notification: colors.primary,
+            },
+        };
+    }, [isDark, colors]);
 
     useEffect(() => {
         let isMounted = true;
@@ -71,14 +93,14 @@ export default function App() {
 
     if (isBootstrapping) {
         return (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                <ActivityIndicator size="large" color="#C93D14" />
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
+                <ActivityIndicator size="large" color={colors.primaryDark} />
             </View>
         );
     }
 
     return (
-        <NavigationContainer>
+        <NavigationContainer theme={navigationTheme}>
             <Stack.Navigator
                 initialRouteName={initialRouteName}
                 screenOptions={{

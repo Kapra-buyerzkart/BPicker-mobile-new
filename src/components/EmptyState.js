@@ -1,22 +1,28 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { COLORS, FONT_SIZES, wp, hp } from '../styles/theme';
+import { FONT_SIZES, wp, hp } from '../styles/theme';
 import { FONTS } from '../styles/typography';
+import { useTheme } from '../theme';
 
-const EmptyState = ({ icon = 'package-variant', title = 'Nothing here', subtitle = '' }) => (
-  <View style={styles.container}>
-    <View style={styles.iconCircle}>
-      <Icon name={icon} size={wp('9%')} color={COLORS.textMuted} />
+const EmptyState = ({ icon = 'package-variant', title = 'Nothing here', subtitle = '' }) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.iconCircle}>
+        <Icon name={icon} size={wp('9%')} color={colors.textMuted} />
+      </View>
+      <Text style={styles.title}>{title}</Text>
+      {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
     </View>
-    <Text style={styles.title}>{title}</Text>
-    {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-  </View>
-);
+  );
+};
 
 export default EmptyState;
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -27,7 +33,7 @@ const styles = StyleSheet.create({
     width: wp('20%'),
     height: wp('20%'),
     borderRadius: wp('10%'),
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: hp('2%'),
@@ -35,13 +41,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FONT_SIZES.lg,
     fontFamily: FONTS.openSans.semiBold,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: FONT_SIZES.sm,
     fontFamily: FONTS.openSans.regular,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: hp('0.6%'),
   },

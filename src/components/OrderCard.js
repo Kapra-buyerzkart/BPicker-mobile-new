@@ -1,15 +1,14 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, View, Text, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
-  COLORS,
   RADIUS,
-  CARD_BORDER,
   FONT_SIZES,
   wp,
   hp,
 } from '../styles/theme';
 import { FONTS } from '../styles/typography';
+import { useTheme } from '../theme';
 import StatusBadge from './StatusBadge';
 import AppButton from './AppButton';
 import PipelineTracker from './PipelineTracker';
@@ -27,6 +26,9 @@ const OrderCard = ({
   onStartPress,
   selectedStatus,
 }) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const formattedAmount = Number.isFinite(Number(amount))
     ? Number(amount).toFixed(2)
     : '0.00';
@@ -66,7 +68,7 @@ const OrderCard = ({
           <Icon
             name="calendar-blank-outline"
             size={wp('3.8%')}
-            color={COLORS.textSecondary}
+            color={colors.textSecondary}
           />
           <Text style={styles.orderMeta}>{date}</Text>
         </View>
@@ -74,7 +76,7 @@ const OrderCard = ({
           <Icon
             name="clock-outline"
             size={wp('3.8%')}
-            color={COLORS.textSecondary}
+            color={colors.textSecondary}
           />
           <Text style={styles.orderMeta}>{slot}</Text>
         </View>
@@ -106,13 +108,14 @@ const OrderCard = ({
 
 export default OrderCard;
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   card: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: RADIUS.lg,
     padding: wp('4%'),
     marginBottom: hp('1.4%'),
-    ...CARD_BORDER,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   topRow: {
     flexDirection: 'row',
@@ -121,7 +124,7 @@ const styles = StyleSheet.create({
     marginBottom: hp('1%'),
   },
   orderId: {
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fontSize: FONT_SIZES.lg,
     fontFamily: FONTS.openSans.semiBold,
   },
@@ -132,13 +135,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   orderMeta: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: FONT_SIZES.sm,
     fontFamily: FONTS.openSans.regular,
   },
   divider: {
     height: 1,
-    backgroundColor: COLORS.border,
+    backgroundColor: colors.border,
     marginVertical: hp('1.4%'),
   },
   bottomRow: {
@@ -147,12 +150,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   amountLabel: {
-    color: COLORS.textMuted,
+    color: colors.textMuted,
     fontSize: FONT_SIZES.xs,
     fontFamily: FONTS.openSans.regular,
   },
   amount: {
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fontFamily: FONTS.openSans.bold,
     fontSize: FONT_SIZES.lg,
     marginTop: 2,

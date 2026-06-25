@@ -1,8 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, View, StyleSheet } from 'react-native';
-import { COLORS, RADIUS, CARD_BORDER, wp, hp } from '../styles/theme';
+import { RADIUS, wp, hp } from '../styles/theme';
+import { useTheme } from '../theme';
 
 export const SkeletonBlock = ({ width, height, radius = RADIUS.sm, style }) => {
+  const { colors } = useTheme();
   const opacity = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
@@ -19,27 +21,32 @@ export const SkeletonBlock = ({ width, height, radius = RADIUS.sm, style }) => {
   return (
     <Animated.View
       style={[
-        { width, height, borderRadius: radius, backgroundColor: '#E2E8F0', opacity },
+        { width, height, borderRadius: radius, backgroundColor: colors.skeleton, opacity },
         style,
       ]}
     />
   );
 };
 
-export const OrderCardSkeleton = () => (
-  <View style={styles.card}>
-    <View style={styles.row}>
-      <SkeletonBlock width="40%" height={16} />
-      <SkeletonBlock width={70} height={22} radius={RADIUS.pill} />
+export const OrderCardSkeleton = () => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.row}>
+        <SkeletonBlock width="40%" height={16} />
+        <SkeletonBlock width={70} height={22} radius={RADIUS.pill} />
+      </View>
+      <SkeletonBlock width="60%" height={12} style={{ marginTop: hp('1.4%') }} />
+      <SkeletonBlock width="45%" height={12} style={{ marginTop: hp('0.8%') }} />
+      <View style={[styles.row, { marginTop: hp('1.8%') }]}>
+        <SkeletonBlock width={80} height={20} />
+        <SkeletonBlock width={100} height={38} radius={RADIUS.md} />
+      </View>
     </View>
-    <SkeletonBlock width="60%" height={12} style={{ marginTop: hp('1.4%') }} />
-    <SkeletonBlock width="45%" height={12} style={{ marginTop: hp('0.8%') }} />
-    <View style={[styles.row, { marginTop: hp('1.8%') }]}>
-      <SkeletonBlock width={80} height={20} />
-      <SkeletonBlock width={100} height={38} radius={RADIUS.md} />
-    </View>
-  </View>
-);
+  );
+};
 
 export const OrderListSkeleton = ({ count = 3 }) => (
   <View>
@@ -49,13 +56,14 @@ export const OrderListSkeleton = ({ count = 3 }) => (
   </View>
 );
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   card: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: RADIUS.lg,
     padding: wp('4%'),
     marginBottom: hp('1.4%'),
-    ...CARD_BORDER,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   row: {
     flexDirection: 'row',

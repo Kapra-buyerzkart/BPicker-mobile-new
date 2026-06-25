@@ -1,10 +1,13 @@
-import React, { useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { Animated, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { COLORS, RADIUS, FONT_SIZES, wp, hp } from '../styles/theme';
+import { RADIUS, FONT_SIZES, wp, hp } from '../styles/theme';
 import { FONTS } from '../styles/typography';
+import { useTheme } from '../theme';
 
 const SummaryCard = ({ color, icon, title, count = 0, total = 0, onPress, isActive }) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const scale = useRef(new Animated.Value(1)).current;
   const sharePct = total > 0 ? Math.min(100, Math.round((count / total) * 100)) : 0;
 
@@ -40,12 +43,12 @@ const SummaryCard = ({ color, icon, title, count = 0, total = 0, onPress, isActi
 
 export default SummaryCard;
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   card: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: RADIUS.lg,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     paddingVertical: hp('1.6%'),
     paddingHorizontal: wp('2%'),
     alignItems: 'flex-start',
@@ -55,7 +58,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 4,
     borderRadius: 2,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
     marginTop: hp('1%'),
     overflow: 'hidden',
   },
@@ -73,11 +76,11 @@ const styles = StyleSheet.create({
   },
   count: {
     fontSize: FONT_SIZES.xl,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fontFamily: FONTS.openSans.bold,
   },
   title: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: FONT_SIZES.xs,
     fontFamily: FONTS.openSans.semiBold,
     marginTop: 2,

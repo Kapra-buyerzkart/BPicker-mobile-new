@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { FONTS } from '../styles/typography';
-import { COLORS, RADIUS, CARD_BORDER, FONT_SIZES, wp, hp } from '../styles/theme';
+import { RADIUS, FONT_SIZES, wp, hp } from '../styles/theme';
+import { useTheme } from '../theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import SummaryCard from '../components/SummaryCard';
@@ -27,6 +28,8 @@ import {
 } from '../services/oneSignalService';
 
 const HomeScreen = ({ navigation, route }) => {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [selectedStatus, setSelectedStatus] = useState('Pending');
   const [ordersData, setOrdersData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -269,7 +272,7 @@ const HomeScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.card} />
       <View style={styles.container}>
         <View style={styles.header}>
           <View>
@@ -282,7 +285,7 @@ const HomeScreen = ({ navigation, route }) => {
               style={styles.iconButton}
               activeOpacity={0.7}
             >
-              <Icon name="refresh" size={wp('5.4%')} color={COLORS.textPrimary} />
+              <Icon name="refresh" size={wp('5.4%')} color={colors.textPrimary} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -291,7 +294,7 @@ const HomeScreen = ({ navigation, route }) => {
               activeOpacity={0.7}
             >
               <BadgeIcon count={notificationBadgeCount}>
-                <Ionicons name={'notifications-outline'} size={wp('5.4%')} color={COLORS.textPrimary} />
+                <Ionicons name={'notifications-outline'} size={wp('5.4%')} color={colors.textPrimary} />
               </BadgeIcon>
             </TouchableOpacity>
 
@@ -300,7 +303,7 @@ const HomeScreen = ({ navigation, route }) => {
               style={[styles.iconButton, styles.profileButton]}
               activeOpacity={0.7}
             >
-              <Ionicons name={'person'} size={wp('5%')} color={COLORS.white} />
+              <Ionicons name={'person'} size={wp('5%')} color={colors.white} />
             </TouchableOpacity>
           </View>
         </View>
@@ -309,7 +312,7 @@ const HomeScreen = ({ navigation, route }) => {
           {/* Summary Cards */}
           <View style={styles.cardGrid}>
             <SummaryCard
-              color={COLORS.warning}
+              color={colors.warning}
               icon="clock-outline"
               title="Pending"
               count={getOrderCountByStatus('Pending')}
@@ -318,7 +321,7 @@ const HomeScreen = ({ navigation, route }) => {
               onPress={() => setSelectedStatus('Pending')}
             />
             <SummaryCard
-              color={COLORS.secondary}
+              color={colors.secondary}
               icon="run"
               title="Picking"
               count={getOrderCountByStatus('Picking')}
@@ -327,7 +330,7 @@ const HomeScreen = ({ navigation, route }) => {
               onPress={() => setSelectedStatus('Picking')}
             />
             <SummaryCard
-              color={COLORS.info}
+              color={colors.info}
               icon="human-dolly"
               title="Packed"
               count={getOrderCountByStatus('Packed')}
@@ -340,7 +343,7 @@ const HomeScreen = ({ navigation, route }) => {
           {/* Total */}
           <View style={styles.totalCard}>
             <View style={styles.totalIconCircle}>
-              <Icon name="clipboard-text-outline" size={wp('5.5%')} color={COLORS.primary} />
+              <Icon name="clipboard-text-outline" size={wp('5.5%')} color={colors.primary} />
             </View>
             <Text style={styles.totalText}>
               Total {selectedStatus} Orders
@@ -354,7 +357,7 @@ const HomeScreen = ({ navigation, route }) => {
             <>
               {!!errorMessage && (
                 <View style={styles.errorCard}>
-                  <Icon name="alert-circle-outline" size={wp('5%')} color={COLORS.danger} />
+                  <Icon name="alert-circle-outline" size={wp('5%')} color={colors.danger} />
                   <Text style={styles.errorText}>{errorMessage}</Text>
                 </View>
               )}
@@ -402,37 +405,37 @@ const HomeScreen = ({ navigation, route }) => {
 
 export default HomeScreen;
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
   },
 
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
 
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     paddingHorizontal: wp('4%'),
     paddingVertical: hp('1.6%'),
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: colors.border,
   },
 
   greeting: {
     fontSize: FONT_SIZES.xs,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontFamily: FONTS.openSans.regular,
   },
 
   storeText: {
     fontSize: FONT_SIZES.lg,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fontFamily: FONTS.openSans.semiBold,
     marginTop: 2,
     maxWidth: wp('45%'),
@@ -448,13 +451,13 @@ const styles = StyleSheet.create({
     width: wp('10.5%'),
     height: wp('10.5%'),
     borderRadius: wp('5.25%'),
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   profileButton: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: colors.primary,
   },
 
   body: {
@@ -474,21 +477,22 @@ const styles = StyleSheet.create({
   },
 
   totalCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: RADIUS.lg,
     paddingVertical: hp('1.6%'),
     paddingHorizontal: wp('4%'),
     marginBottom: hp('1.8%'),
-    ...CARD_BORDER,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
 
   totalIconCircle: {
     width: wp('10%'),
     height: wp('10%'),
     borderRadius: wp('5%'),
-    backgroundColor: '#FFEDE3',
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: wp('3%'),
@@ -496,13 +500,13 @@ const styles = StyleSheet.create({
 
   totalText: {
     flex: 1,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: FONT_SIZES.sm,
     fontFamily: FONTS.openSans.semiBold,
   },
 
   totalCount: {
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fontSize: FONT_SIZES.xl,
     fontFamily: FONTS.openSans.bold,
   },
@@ -511,7 +515,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: wp('2%'),
-    backgroundColor: COLORS.dangerLight,
+    backgroundColor: colors.dangerLight,
     borderRadius: RADIUS.md,
     padding: wp('3%'),
     marginBottom: hp('1.2%'),
@@ -519,7 +523,7 @@ const styles = StyleSheet.create({
 
   errorText: {
     flex: 1,
-    color: '#B91C1C',
+    color: colors.danger,
     fontFamily: FONTS.openSans.semiBold,
     fontSize: FONT_SIZES.sm,
   },

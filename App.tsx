@@ -1,20 +1,34 @@
 import React, { useEffect } from 'react';
-import { StatusBar, useColorScheme } from 'react-native';
+import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Container from './src/navigation/Container';
 import { initOneSignal } from './src/services/oneSignalService';
+import { ThemeProvider, useTheme } from './src/theme';
+
+function ThemedApp() {
+  const { colors, isDark } = useTheme();
+
+  return (
+    <>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
+      />
+      <Container />
+    </>
+  );
+}
 
 export default function App() {
-  const isDarkMode = useColorScheme() === 'dark';
-
   useEffect(() => {
     initOneSignal();
   }, []);
 
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <Container />
+      <ThemeProvider>
+        <ThemedApp />
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

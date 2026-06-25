@@ -1,12 +1,15 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { COLORS, FONT_SIZES, wp } from '../styles/theme';
+import { FONT_SIZES, wp } from '../styles/theme';
 import { FONTS } from '../styles/typography';
+import { useTheme } from '../theme';
 
 const STEPS = ['Pending', 'Picking', 'Packed'];
 
 const PipelineTracker = ({ currentStatus }) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const activeIndex = Math.max(STEPS.indexOf(currentStatus), 0);
 
   return (
@@ -23,18 +26,18 @@ const PipelineTracker = ({ currentStatus }) => {
                 style={[
                   styles.dot,
                   {
-                    backgroundColor: isFilled ? COLORS.primary : COLORS.card,
-                    borderColor: isFilled ? COLORS.primary : COLORS.border,
+                    backgroundColor: isFilled ? colors.primary : colors.card,
+                    borderColor: isFilled ? colors.primary : colors.border,
                   },
                 ]}
               >
-                {isDone && <Icon name="check" size={wp('2.6%')} color={COLORS.white} />}
+                {isDone && <Icon name="check" size={wp('2.6%')} color={colors.white} />}
               </View>
               {index < STEPS.length - 1 && (
                 <View
                   style={[
                     styles.connector,
-                    { backgroundColor: isDone ? COLORS.primary : COLORS.border },
+                    { backgroundColor: isDone ? colors.primary : colors.border },
                   ]}
                 />
               )}
@@ -59,7 +62,7 @@ const PipelineTracker = ({ currentStatus }) => {
 
 export default PipelineTracker;
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   trackRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -83,11 +86,11 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: FONT_SIZES.xs,
-    color: COLORS.textMuted,
+    color: colors.textMuted,
     fontFamily: FONTS.openSans.regular,
   },
   labelActive: {
-    color: COLORS.primary,
+    color: colors.primary,
     fontFamily: FONTS.openSans.semiBold,
   },
 });

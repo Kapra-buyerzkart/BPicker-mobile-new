@@ -1,15 +1,16 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Modal, Text, View, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { COLORS, RADIUS, FONT_SIZES, wp, hp } from '../styles/theme';
+import { RADIUS, FONT_SIZES, wp, hp } from '../styles/theme';
 import { FONTS } from '../styles/typography';
+import { useTheme } from '../theme';
 import AppButton from './AppButton';
 
-const ICONS = {
-  default: { name: 'help-circle-outline', color: COLORS.primary, bg: '#FFEDE3' },
-  success: { name: 'check-circle-outline', color: COLORS.success, bg: COLORS.successLight },
-  danger: { name: 'alert-circle-outline', color: COLORS.danger, bg: COLORS.dangerLight },
-};
+const getIcons = (colors) => ({
+  default: { name: 'help-circle-outline', color: colors.primary, bg: colors.primarySoft },
+  success: { name: 'check-circle-outline', color: colors.success, bg: colors.successLight },
+  danger: { name: 'alert-circle-outline', color: colors.danger, bg: colors.dangerLight },
+});
 
 const ConfirmModal = ({
   visible,
@@ -24,9 +25,13 @@ const ConfirmModal = ({
   variant = 'default',
   hideCancel = false,
 }) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const icons = useMemo(() => getIcons(colors), [colors]);
+
   const scale = useRef(new Animated.Value(0.9)).current;
   const opacity = useRef(new Animated.Value(0)).current;
-  const icon = ICONS[variant] || ICONS.default;
+  const icon = icons[variant] || icons.default;
 
   useEffect(() => {
     if (visible) {
@@ -76,17 +81,17 @@ const ConfirmModal = ({
 
 export default ConfirmModal;
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: COLORS.overlay,
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: wp('7%'),
   },
   card: {
     width: '100%',
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: RADIUS.xl,
     padding: wp('6%'),
     alignItems: 'center',
@@ -102,18 +107,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FONT_SIZES.lg,
     fontFamily: FONTS.openSans.semiBold,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     textAlign: 'center',
   },
   message: {
     fontSize: FONT_SIZES.sm,
     fontFamily: FONTS.openSans.regular,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: hp('0.8%'),
   },
   errorText: {
-    color: COLORS.danger,
+    color: colors.danger,
     fontFamily: FONTS.openSans.semiBold,
     fontSize: FONT_SIZES.sm,
     textAlign: 'center',

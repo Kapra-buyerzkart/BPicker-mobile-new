@@ -1,7 +1,8 @@
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Animated, View, Text, TextInput, StyleSheet } from 'react-native';
-import { COLORS, RADIUS, FONT_SIZES, wp, hp } from '../styles/theme';
+import { RADIUS, FONT_SIZES, wp, hp } from '../styles/theme';
 import { FONTS } from '../styles/typography';
+import { useTheme } from '../theme';
 
 const AppTextInput = ({
   label,
@@ -13,6 +14,9 @@ const AppTextInput = ({
   editable = true,
   ...textInputProps
 }) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const [isFocused, setIsFocused] = useState(false);
   const labelAnim = useRef(new Animated.Value(value ? 1 : 0)).current;
 
@@ -36,7 +40,7 @@ const AppTextInput = ({
     }
   };
 
-  const borderColor = error ? COLORS.danger : isFocused ? COLORS.primary : COLORS.border;
+  const borderColor = error ? colors.danger : isFocused ? colors.primary : colors.border;
 
   return (
     <View style={styles.wrapper}>
@@ -49,7 +53,7 @@ const AppTextInput = ({
               {
                 top: labelAnim.interpolate({ inputRange: [0, 1], outputRange: [hp('1.9%'), -hp('0.9%')] }),
                 fontSize: labelAnim.interpolate({ inputRange: [0, 1], outputRange: [FONT_SIZES.md, FONT_SIZES.xs] }),
-                color: isFocused ? COLORS.primary : COLORS.textSecondary,
+                color: isFocused ? colors.primary : colors.textSecondary,
               },
             ]}
           >
@@ -61,7 +65,7 @@ const AppTextInput = ({
             onFocus={handleFocus}
             onBlur={handleBlur}
             editable={editable}
-            placeholderTextColor={COLORS.textMuted}
+            placeholderTextColor={colors.placeholder}
             style={styles.input}
             {...textInputProps}
           />
@@ -75,7 +79,7 @@ const AppTextInput = ({
 
 export default AppTextInput;
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   wrapper: {
     width: '100%',
     marginBottom: hp('1.8%'),
@@ -87,7 +91,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     paddingHorizontal: wp('3.5%'),
     height: hp('7%'),
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.inputBackground,
   },
   inputArea: {
     flex: 1,
@@ -98,17 +102,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     fontFamily: FONTS.openSans.regular,
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.inputBackground,
     paddingHorizontal: 2,
   },
   input: {
     fontSize: FONT_SIZES.md,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fontFamily: FONTS.openSans.regular,
     paddingTop: hp('1.2%'),
   },
   errorText: {
-    color: COLORS.danger,
+    color: colors.danger,
     fontFamily: FONTS.openSans.semiBold,
     fontSize: FONT_SIZES.xs,
     marginTop: hp('0.6%'),
