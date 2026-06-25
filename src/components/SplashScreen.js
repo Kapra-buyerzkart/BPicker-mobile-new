@@ -18,7 +18,7 @@ import { FONTS } from '../styles/typography';
 import { wp, hp } from '../styles/theme';
 
 // Minimum time the splash entrance animation takes before exit can start.
-const MIN_DISPLAY_MS = 2500;
+const MIN_DISPLAY_MS = 3000;
 
 const SplashScreen = ({ isReady, onAnimationComplete }) => {
   const { colors } = useTheme();
@@ -161,83 +161,128 @@ const SplashScreen = ({ isReady, onAnimationComplete }) => {
     opacity: taglineOpacity.value,
   }));
 
-  // Decorative floating dots
-  const dot1Opacity = useSharedValue(0);
-  const dot2Opacity = useSharedValue(0);
-  const dot3Opacity = useSharedValue(0);
-  const dot1Y = useSharedValue(0);
-  const dot2Y = useSharedValue(0);
-  const dot3Y = useSharedValue(0);
+  // Decorative floating circles – configuration driven
+  const CIRCLE_CONFIG = [
+    { delay: 600, maxOpacity: 0.3, travel: 8, duration: 1500 },
+    { delay: 750, maxOpacity: 0.25, travel: 6, duration: 1800 },
+    { delay: 900, maxOpacity: 0.2, travel: 10, duration: 2000 },
+    { delay: 500, maxOpacity: 0.15, travel: 12, duration: 2200 },
+    { delay: 650, maxOpacity: 0.2, travel: 7, duration: 1600 },
+    { delay: 800, maxOpacity: 0.18, travel: 9, duration: 1900 },
+    { delay: 550, maxOpacity: 0.22, travel: 11, duration: 2100 },
+    { delay: 700, maxOpacity: 0.12, travel: 5, duration: 1400 },
+    { delay: 850, maxOpacity: 0.16, travel: 14, duration: 2400 },
+    { delay: 950, maxOpacity: 0.14, travel: 8, duration: 1700 },
+  ];
+
+  // Create shared values for each circle
+  const c1Op = useSharedValue(0);
+  const c1Y = useSharedValue(0);
+  const c2Op = useSharedValue(0);
+  const c2Y = useSharedValue(0);
+  const c3Op = useSharedValue(0);
+  const c3Y = useSharedValue(0);
+  const c4Op = useSharedValue(0);
+  const c4Y = useSharedValue(0);
+  const c5Op = useSharedValue(0);
+  const c5Y = useSharedValue(0);
+  const c6Op = useSharedValue(0);
+  const c6Y = useSharedValue(0);
+  const c7Op = useSharedValue(0);
+  const c7Y = useSharedValue(0);
+  const c8Op = useSharedValue(0);
+  const c8Y = useSharedValue(0);
+  const c9Op = useSharedValue(0);
+  const c9Y = useSharedValue(0);
+  const c10Op = useSharedValue(0);
+  const c10Y = useSharedValue(0);
+
+  const allOps = [c1Op, c2Op, c3Op, c4Op, c5Op, c6Op, c7Op, c8Op, c9Op, c10Op];
+  const allYs = [c1Y, c2Y, c3Y, c4Y, c5Y, c6Y, c7Y, c8Y, c9Y, c10Y];
 
   useEffect(() => {
-    // Floating dots animation
-    dot1Opacity.value = withDelay(600, withTiming(0.3, { duration: 500 }));
-    dot1Y.value = withDelay(
-      600,
-      withRepeat(
-        withSequence(
-          withTiming(-8, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-          withTiming(8, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+    CIRCLE_CONFIG.forEach((cfg, i) => {
+      allOps[i].value = withDelay(
+        cfg.delay,
+        withTiming(cfg.maxOpacity, { duration: 500 }),
+      );
+      allYs[i].value = withDelay(
+        cfg.delay,
+        withRepeat(
+          withSequence(
+            withTiming(-cfg.travel, {
+              duration: cfg.duration,
+              easing: Easing.inOut(Easing.ease),
+            }),
+            withTiming(cfg.travel, {
+              duration: cfg.duration,
+              easing: Easing.inOut(Easing.ease),
+            }),
+          ),
+          -1,
+          true,
         ),
-        -1,
-        true,
-      ),
-    );
-
-    dot2Opacity.value = withDelay(750, withTiming(0.25, { duration: 500 }));
-    dot2Y.value = withDelay(
-      750,
-      withRepeat(
-        withSequence(
-          withTiming(6, { duration: 1800, easing: Easing.inOut(Easing.ease) }),
-          withTiming(-6, { duration: 1800, easing: Easing.inOut(Easing.ease) }),
-        ),
-        -1,
-        true,
-      ),
-    );
-
-    dot3Opacity.value = withDelay(900, withTiming(0.2, { duration: 500 }));
-    dot3Y.value = withDelay(
-      900,
-      withRepeat(
-        withSequence(
-          withTiming(-10, {
-            duration: 2000,
-            easing: Easing.inOut(Easing.ease),
-          }),
-          withTiming(10, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
-        ),
-        -1,
-        true,
-      ),
-    );
+      );
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const dot1Style = useAnimatedStyle(() => ({
-    opacity: dot1Opacity.value,
-    transform: [{ translateY: dot1Y.value }],
+    opacity: c1Op.value,
+    transform: [{ translateY: c1Y.value }],
   }));
-
   const dot2Style = useAnimatedStyle(() => ({
-    opacity: dot2Opacity.value,
-    transform: [{ translateY: dot2Y.value }],
+    opacity: c2Op.value,
+    transform: [{ translateY: c2Y.value }],
   }));
-
   const dot3Style = useAnimatedStyle(() => ({
-    opacity: dot3Opacity.value,
-    transform: [{ translateY: dot3Y.value }],
+    opacity: c3Op.value,
+    transform: [{ translateY: c3Y.value }],
+  }));
+  const dot4Style = useAnimatedStyle(() => ({
+    opacity: c4Op.value,
+    transform: [{ translateY: c4Y.value }],
+  }));
+  const dot5Style = useAnimatedStyle(() => ({
+    opacity: c5Op.value,
+    transform: [{ translateY: c5Y.value }],
+  }));
+  const dot6Style = useAnimatedStyle(() => ({
+    opacity: c6Op.value,
+    transform: [{ translateY: c6Y.value }],
+  }));
+  const dot7Style = useAnimatedStyle(() => ({
+    opacity: c7Op.value,
+    transform: [{ translateY: c7Y.value }],
+  }));
+  const dot8Style = useAnimatedStyle(() => ({
+    opacity: c8Op.value,
+    transform: [{ translateY: c8Y.value }],
+  }));
+  const dot9Style = useAnimatedStyle(() => ({
+    opacity: c9Op.value,
+    transform: [{ translateY: c9Y.value }],
+  }));
+  const dot10Style = useAnimatedStyle(() => ({
+    opacity: c10Op.value,
+    transform: [{ translateY: c10Y.value }],
   }));
 
   return (
     <View style={[styles.root, { backgroundColor: colors.primary }]}>
       <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
       <Animated.View style={[styles.content, containerStyle]}>
-        {/* Floating decorative dots */}
+        {/* Floating decorative circles */}
         <Animated.View style={[styles.dot, styles.dot1, dot1Style]} />
         <Animated.View style={[styles.dot, styles.dot2, dot2Style]} />
         <Animated.View style={[styles.dot, styles.dot3, dot3Style]} />
+        <Animated.View style={[styles.dot, styles.dot4, dot4Style]} />
+        <Animated.View style={[styles.dot, styles.dot5, dot5Style]} />
+        <Animated.View style={[styles.dot, styles.dot6, dot6Style]} />
+        <Animated.View style={[styles.dot, styles.dot7, dot7Style]} />
+        <Animated.View style={[styles.dot, styles.dot8, dot8Style]} />
+        <Animated.View style={[styles.dot, styles.dot9, dot9Style]} />
+        <Animated.View style={[styles.dot, styles.dot10, dot10Style]} />
 
         {/* Glow ring behind logo */}
         <Animated.View style={[styles.glowRing, glowStyle]} />
@@ -315,28 +360,75 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     textAlign: 'center',
   },
-  // Decorative floating dots
+  // Decorative floating circles
   dot: {
     position: 'absolute',
-    borderRadius: 50,
+    borderRadius: 999,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   dot1: {
-    width: 12,
-    height: 12,
+    width: 45,
+    height: 45,
     top: '18%',
     left: '12%',
   },
   dot2: {
-    width: 8,
-    height: 8,
+    width: 30,
+    height: 30,
     top: '25%',
     right: '15%',
   },
   dot3: {
-    width: 16,
-    height: 16,
+    width: 55,
+    height: 55,
     bottom: '22%',
     right: '20%',
+  },
+  dot4: {
+    width: 70,
+    height: 70,
+    top: '10%',
+    right: '35%',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  dot5: {
+    width: 35,
+    height: 35,
+    top: '35%',
+    left: '25%',
+  },
+  dot6: {
+    width: 50,
+    height: 50,
+    bottom: '35%',
+    left: '8%',
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+  },
+  dot7: {
+    width: 80,
+    height: 80,
+    bottom: '12%',
+    left: '30%',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  dot8: {
+    width: 24,
+    height: 24,
+    top: '45%',
+    right: '8%',
+  },
+  dot9: {
+    width: 60,
+    height: 60,
+    bottom: '42%',
+    right: '10%',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+  },
+  dot10: {
+    width: 32,
+    height: 32,
+    top: '60%',
+    left: '15%',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
 });

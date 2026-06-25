@@ -6,6 +6,7 @@ import {
     ScrollView,
     ActivityIndicator,
     Switch,
+    Pressable,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,7 +16,6 @@ import { useTheme } from '../theme';
 import { getPickerProfile, logoutPickerAgent } from '../services/authService';
 import { oneSignalLogout } from '../services/oneSignalService';
 import AppHeader from '../components/AppHeader';
-import AppButton from '../components/AppButton';
 import ConfirmModal from '../components/ConfirmModal';
 
 const PROFILE_FIELDS = [
@@ -177,20 +177,42 @@ const ProfileScreen = ({ navigation }) => {
                     </View>
                 )}
 
-                <AppButton
-                    label="CHANGE PASSWORD"
-                    variant="secondary"
-                    onPress={handleChangePassword}
-                    style={styles.actionButton}
-                />
-                <AppButton
-                    label="LOGOUT"
-                    variant="danger"
-                    onPress={handleLogoutPress}
-                    loading={isLoggingOut}
-                    disabled={isLoggingOut}
-                    style={styles.actionButton}
-                />
+                {/* Account actions */}
+                <View style={styles.card}>
+                    <Pressable
+                        onPress={handleChangePassword}
+                        style={({ pressed }) => [
+                            styles.menuRow,
+                            pressed && styles.menuRowPressed,
+                        ]}
+                    >
+                        <View style={styles.infoIconCircle}>
+                            <Icon name="lock-outline" size={wp('4.6%')} color={colors.primary} />
+                        </View>
+                        <Text style={styles.menuLabel}>Change Password</Text>
+                        <Icon name="chevron-right" size={wp('5.5%')} color={colors.textMuted} />
+                    </Pressable>
+
+                    <Pressable
+                        onPress={handleLogoutPress}
+                        disabled={isLoggingOut}
+                        style={({ pressed }) => [
+                            styles.menuRow,
+                            styles.menuRowLast,
+                            pressed && styles.menuRowPressed,
+                        ]}
+                    >
+                        <View style={styles.menuIconCircleDanger}>
+                            <Icon name="logout" size={wp('4.6%')} color={colors.danger} />
+                        </View>
+                        <Text style={[styles.menuLabel, styles.menuLabelDanger]}>Logout</Text>
+                        {isLoggingOut ? (
+                            <ActivityIndicator size="small" color={colors.danger} />
+                        ) : (
+                            <Icon name="chevron-right" size={wp('5.5%')} color={colors.textMuted} />
+                        )}
+                    </Pressable>
+                </View>
             </ScrollView>
 
             <ConfirmModal
@@ -320,8 +342,40 @@ const makeStyles = (colors) => StyleSheet.create({
         fontSize: FONT_SIZES.sm,
     },
 
-    actionButton: {
-        width: '100%',
-        marginBottom: hp('1.4%'),
+    menuRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: hp('1.6%'),
+        borderBottomWidth: 1,
+        borderBottomColor: colors.divider,
+    },
+
+    menuRowLast: {
+        borderBottomWidth: 0,
+    },
+
+    menuRowPressed: {
+        opacity: 0.6,
+    },
+
+    menuIconCircleDanger: {
+        width: wp('9%'),
+        height: wp('9%'),
+        borderRadius: wp('4.5%'),
+        backgroundColor: colors.dangerLight,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: wp('3%'),
+    },
+
+    menuLabel: {
+        flex: 1,
+        color: colors.textPrimary,
+        fontSize: FONT_SIZES.md,
+        fontFamily: FONTS.openSans.semiBold,
+    },
+
+    menuLabelDanger: {
+        color: colors.danger,
     },
 });

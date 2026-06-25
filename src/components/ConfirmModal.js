@@ -59,7 +59,7 @@ const ConfirmModal = ({
             {!hideCancel && (
               <AppButton
                 label={cancelLabel}
-                variant="secondary"
+                variant="neutral"
                 onPress={onCancel}
                 disabled={loading}
                 style={styles.flexButton}

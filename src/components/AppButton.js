@@ -14,7 +14,8 @@ const getVariants = (colors) => ({
   primary: { bg: colors.primary, fg: colors.white, border: 'transparent' },
   secondary: { bg: colors.card, fg: colors.primary, border: colors.primary },
   success: { bg: colors.success, fg: colors.white, border: 'transparent' },
-  danger: { bg: colors.card, fg: colors.danger, border: colors.danger },
+  danger: { bg: colors.danger, fg: colors.white, border: 'transparent' },
+  neutral: { bg: colors.surface, fg: colors.textSecondary, border: colors.border },
   disabledLook: { bg: colors.disabledBackground, fg: colors.textMuted, border: 'transparent' },
 });
 
