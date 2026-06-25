@@ -3,33 +3,105 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
-  FlatList,
   StatusBar,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  interpolate,
+  Extrapolation,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { FONTS } from '../styles/typography';
 import { RADIUS, FONT_SIZES, wp, hp } from '../styles/theme';
 import { useTheme } from '../theme';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import SummaryCard from '../components/SummaryCard';
+import AnimatedDashboardHeader from '../components/AnimatedDashboardHeader';
+import AnimatedStatsBar from '../components/AnimatedStatsBar';
 import OrderCard from '../components/OrderCard';
 import EmptyState from '../components/EmptyState';
 import ConfirmModal from '../components/ConfirmModal';
 import { OrderListSkeleton } from '../components/SkeletonLoader';
 import { getOrders, updateOrderStatus } from '../services/ordersService';
 import { getStoredUser } from '../services/authService';
-import BadgeIcon from '../components/BadgeIcon';
 import {
   clearNotificationBadgeCount,
   subscribeNotificationBadgeCount,
 } from '../services/oneSignalService';
 
+// Stage 3: the "Total Orders" summary card collapses to nothing between
+// 120px and 180px of scroll so the list takes over the viewport.
+const TOTAL_COLLAPSE_START = 120;
+const TOTAL_COLLAPSE_END = 180;
+// hp() is heightPercentageToDP (react-native-responsive-screen), a remote
+// function that cannot run on the UI runtime. Resolve every responsive value to
+// a plain number here on the JS thread so the worklets below only close over
+// numbers (never call hp() inside an interpolate range).
+const TOTAL_CARD_H = hp('9.5%');
+const TOTAL_MARGIN_BOTTOM = hp('1.8%');
+const TOTAL_TRANSLATE_Y = hp('2%');
+
+// The collapsing chrome (stats bar + total card) is rendered as an absolute
+// overlay so its per-frame height changes never relayout the list beneath it
+// (the old flex layout grew the FlatList every frame → a layout pass per
+// frame). The list reserves this much top padding for the chrome's expanded
+// height; the overlay's opaque background hides rows scrolling under it. Since
+// that background and the list's backdrop are both colors.background, the small
+// difference between the chrome's collapse rate and the scroll distance is
+// invisible.
+const CHROME_TOP_GAP = hp('1.8%');
+const CHROME_EXPANDED_H =
+  CHROME_TOP_GAP +
+  hp('17%') + // AnimatedStatsBar EXPANDED_H
+  hp('1.4%') + // stats grid marginBottom
+  TOTAL_CARD_H +
+  TOTAL_MARGIN_BOTTOM;
+
 const HomeScreen = ({ navigation, route }) => {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+
+  // Single shared scroll value drives every dashboard interpolation. As a
+  // Reanimated shared value updated from a UI-thread scroll handler, none of
+  // the scroll-driven work touches the JS thread — so it stays smooth even on
+  // a slow drag.
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
+  const totalAnim = useAnimatedStyle(() => ({
+    height: interpolate(
+      scrollY.value,
+      [TOTAL_COLLAPSE_START, TOTAL_COLLAPSE_END],
+      [TOTAL_CARD_H, 0],
+      Extrapolation.CLAMP,
+    ),
+    opacity: interpolate(
+      scrollY.value,
+      [TOTAL_COLLAPSE_START, TOTAL_COLLAPSE_START + 45],
+      [1, 0],
+      Extrapolation.CLAMP,
+    ),
+    marginBottom: interpolate(
+      scrollY.value,
+      [TOTAL_COLLAPSE_START, TOTAL_COLLAPSE_END],
+      [TOTAL_MARGIN_BOTTOM, 0],
+      Extrapolation.CLAMP,
+    ),
+    transform: [
+      {
+        translateY: interpolate(
+          scrollY.value,
+          [TOTAL_COLLAPSE_START, TOTAL_COLLAPSE_END],
+          [0, -TOTAL_TRANSLATE_Y],
+          Extrapolation.CLAMP,
+        ),
+      },
+    ],
+  }));
+
   const [selectedStatus, setSelectedStatus] = useState('Pending');
   const [ordersData, setOrdersData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -234,11 +306,40 @@ const HomeScreen = ({ navigation, route }) => {
     return `${day}-${month}-${year} ${hours}:${minutes} ${period}`;
   };
 
-  const getOrderCountByStatus = (status) => {
-    return statusCounts[status] ?? 0;
-  };
-
   const pipelineTotal = statusCounts.Pending + statusCounts.Picking + statusCounts.Packed;
+
+  const statItems = useMemo(
+    () => [
+      {
+        color: colors.warning,
+        icon: 'clock-outline',
+        title: 'Pending',
+        count: statusCounts.Pending ?? 0,
+        total: pipelineTotal,
+        isActive: selectedStatus === 'Pending',
+        onPress: () => setSelectedStatus('Pending'),
+      },
+      {
+        color: colors.secondary,
+        icon: 'run',
+        title: 'Picking',
+        count: statusCounts.Picking ?? 0,
+        total: pipelineTotal,
+        isActive: selectedStatus === 'Picking',
+        onPress: () => setSelectedStatus('Picking'),
+      },
+      {
+        color: colors.info,
+        icon: 'human-dolly',
+        title: 'Packed',
+        count: statusCounts.Packed ?? 0,
+        total: pipelineTotal,
+        isActive: selectedStatus === 'Packed',
+        onPress: () => setSelectedStatus('Packed'),
+      },
+    ],
+    [colors, statusCounts, pipelineTotal, selectedStatus],
+  );
 
   const handleConfirmStartPicking = async () => {
     if (!selectedOrderId) {
@@ -274,113 +375,75 @@ const HomeScreen = ({ navigation, route }) => {
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.card} />
       <View style={styles.container}>
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Welcome back</Text>
-            <Text style={styles.storeText} numberOfLines={1}>{storeName || '-'}</Text>
-          </View>
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              onPress={() => loadOrders(selectedStatus, true)}
-              style={styles.iconButton}
-              activeOpacity={0.7}
-            >
-              <Icon name="refresh" size={wp('5.4%')} color={colors.textPrimary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => clearNotificationBadgeCount()}
-              style={styles.iconButton}
-              activeOpacity={0.7}
-            >
-              <BadgeIcon count={notificationBadgeCount}>
-                <Ionicons name={'notifications-outline'} size={wp('5.4%')} color={colors.textPrimary} />
-              </BadgeIcon>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Profile')}
-              style={[styles.iconButton, styles.profileButton]}
-              activeOpacity={0.7}
-            >
-              <Ionicons name={'person'} size={wp('5%')} color={colors.white} />
-            </TouchableOpacity>
-          </View>
-        </View>
+        <AnimatedDashboardHeader
+          scrollY={scrollY}
+          storeName={storeName}
+          notificationBadgeCount={notificationBadgeCount}
+          onRefresh={() => loadOrders(selectedStatus, true)}
+          onNotifications={() => clearNotificationBadgeCount()}
+          onProfile={() => navigation.navigate('Profile')}
+        />
 
         <View style={styles.body}>
-          {/* Summary Cards */}
-          <View style={styles.cardGrid}>
-            <SummaryCard
-              color={colors.warning}
-              icon="clock-outline"
-              title="Pending"
-              count={getOrderCountByStatus('Pending')}
-              total={pipelineTotal}
-              isActive={selectedStatus === 'Pending'}
-              onPress={() => setSelectedStatus('Pending')}
-            />
-            <SummaryCard
-              color={colors.secondary}
-              icon="run"
-              title="Picking"
-              count={getOrderCountByStatus('Picking')}
-              total={pipelineTotal}
-              isActive={selectedStatus === 'Picking'}
-              onPress={() => setSelectedStatus('Picking')}
-            />
-            <SummaryCard
-              color={colors.info}
-              icon="human-dolly"
-              title="Packed"
-              count={getOrderCountByStatus('Packed')}
-              total={pipelineTotal}
-              isActive={selectedStatus === 'Packed'}
-              onPress={() => setSelectedStatus('Packed')}
-            />
-          </View>
-
-          {/* Total */}
-          <View style={styles.totalCard}>
-            <View style={styles.totalIconCircle}>
-              <Icon name="clipboard-text-outline" size={wp('5.5%')} color={colors.primary} />
-            </View>
-            <Text style={styles.totalText}>
-              Total {selectedStatus} Orders
-            </Text>
-            <Text style={styles.totalCount}>{ordersData.length}</Text>
-          </View>
-
+          {/* Scrolling content fills the whole body at a constant height. It
+              reserves CHROME_EXPANDED_H of top padding for the overlay below,
+              so morphing the chrome never resizes this list. */}
           {isLoading ? (
-            <OrderListSkeleton count={3} />
+            <View style={styles.loadingWrap}>
+              <OrderListSkeleton count={3} />
+            </View>
           ) : (
-            <>
-              {!!errorMessage && (
-                <View style={styles.errorCard}>
-                  <Icon name="alert-circle-outline" size={wp('5%')} color={colors.danger} />
-                  <Text style={styles.errorText}>{errorMessage}</Text>
-                </View>
-              )}
-
-              <FlatList
-                data={ordersData}
-                keyExtractor={(item) => item.id}
-                renderItem={renderOrderItem}
-                showsVerticalScrollIndicator={false}
-                refreshing={isRefreshing}
-                onRefresh={() => loadOrders(selectedStatus, true)}
-                ListEmptyComponent={
-                  <EmptyState
-                    icon="clipboard-list-outline"
-                    title="No orders found"
-                    subtitle={`You have no ${selectedStatus.toLowerCase()} orders right now.`}
-                  />
-                }
-                style={styles.list}
-                contentContainerStyle={{ paddingBottom: 0 }}
-              />
-            </>
+            <Animated.FlatList
+              data={ordersData}
+              keyExtractor={(item) => item.id}
+              renderItem={renderOrderItem}
+              showsVerticalScrollIndicator={false}
+              refreshing={isRefreshing}
+              onRefresh={() => loadOrders(selectedStatus, true)}
+              onScroll={onScroll}
+              scrollEventThrottle={16}
+              ListHeaderComponent={
+                errorMessage ? (
+                  <View style={styles.errorCard}>
+                    <Icon name="alert-circle-outline" size={wp('5%')} color={colors.danger} />
+                    <Text style={styles.errorText}>{errorMessage}</Text>
+                  </View>
+                ) : null
+              }
+              ListEmptyComponent={
+                <EmptyState
+                  icon="clipboard-list-outline"
+                  title="No orders found"
+                  subtitle={`You have no ${selectedStatus.toLowerCase()} orders right now.`}
+                />
+              }
+              style={styles.list}
+              contentContainerStyle={styles.listContent}
+            />
           )}
+
+          {/* Collapsing chrome overlay. Absolute + opaque background, so its
+              height animations (stats morph, total collapse) cost a tiny
+              subtree layout instead of relaying out the whole list. box-none
+              lets the list scroll/refresh through the empty areas while the
+              stat chips still receive taps. */}
+          <View style={styles.chrome} pointerEvents="box-none">
+            {/* Summary cards → morphing sticky toolbar */}
+            <AnimatedStatsBar scrollY={scrollY} items={statItems} />
+
+            {/* Total — collapses away on deep scroll */}
+            <Animated.View style={[styles.totalWrap, totalAnim]}>
+              <View style={styles.totalCard}>
+                <View style={styles.totalIconCircle}>
+                  <Icon name="clipboard-text-outline" size={wp('5.5%')} color={colors.primary} />
+                </View>
+                <Text style={styles.totalText}>
+                  Total {selectedStatus} Orders
+                </Text>
+                <Text style={styles.totalCount}>{ordersData.length}</Text>
+              </View>
+            </Animated.View>
+          </View>
         </View>
       </View>
 
@@ -416,64 +479,38 @@ const makeStyles = (colors) => StyleSheet.create({
     backgroundColor: colors.background,
   },
 
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    paddingHorizontal: wp('4%'),
-    paddingVertical: hp('1.6%'),
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-
-  greeting: {
-    fontSize: FONT_SIZES.xs,
-    color: colors.textSecondary,
-    fontFamily: FONTS.openSans.regular,
-  },
-
-  storeText: {
-    fontSize: FONT_SIZES.lg,
-    color: colors.textPrimary,
-    fontFamily: FONTS.openSans.semiBold,
-    marginTop: 2,
-    maxWidth: wp('45%'),
-  },
-
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: wp('2.5%'),
-  },
-
-  iconButton: {
-    width: wp('10.5%'),
-    height: wp('10.5%'),
-    borderRadius: wp('5.25%'),
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  profileButton: {
-    backgroundColor: colors.primary,
-  },
-
   body: {
     flex: 1,
-    paddingHorizontal: wp('4%'),
-    paddingTop: hp('1.8%'),
   },
 
   list: {
     flex: 1,
   },
 
-  cardGrid: {
-    flexDirection: 'row',
-    marginHorizontal: -wp('1%'),
-    marginBottom: hp('1.6%'),
+  listContent: {
+    paddingTop: CHROME_EXPANDED_H,
+    paddingHorizontal: wp('4%'),
+    paddingBottom: 0,
+  },
+
+  loadingWrap: {
+    flex: 1,
+    paddingTop: CHROME_EXPANDED_H,
+    paddingHorizontal: wp('4%'),
+  },
+
+  chrome: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingTop: CHROME_TOP_GAP,
+    paddingHorizontal: wp('4%'),
+    backgroundColor: colors.background,
+  },
+
+  totalWrap: {
+    overflow: 'hidden',
   },
 
   totalCard: {
@@ -483,7 +520,6 @@ const makeStyles = (colors) => StyleSheet.create({
     borderRadius: RADIUS.lg,
     paddingVertical: hp('1.6%'),
     paddingHorizontal: wp('4%'),
-    marginBottom: hp('1.8%'),
     borderWidth: 1,
     borderColor: colors.border,
   },
