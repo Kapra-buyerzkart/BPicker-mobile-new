@@ -6,6 +6,7 @@ import {
   type NotificationWillDisplayEvent,
 } from 'react-native-onesignal';
 import { ONE_SIGNAL_APP_ID, isValidOneSignalAppId } from '../config/oneSignal';
+import { playOrderAlertSound } from './soundPlayer';
 
 let hasInitialized = false;
 let desiredExternalId: string | null = null;
@@ -156,6 +157,11 @@ export function initOneSignal(): void {
     const notification = event.getNotification();
     const incrementBy = parseBadgeCount(notification?.badgeIncrement) || 1;
     void incrementNotificationBadgeCount(incrementBy);
+
+    // The OS notification channel only rings when the system posts the notification
+    // (i.e. while the app is backgrounded). In the foreground we get this event
+    // instead, so play the alert sound explicitly.
+    playOrderAlertSound();
   });
 
   OneSignal.Notifications.addEventListener('click', (_event: NotificationClickEvent) => {

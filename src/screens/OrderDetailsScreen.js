@@ -5,9 +5,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Image,
   ActivityIndicator,
 } from 'react-native';
+import FastImage from '@d11/react-native-fast-image';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -238,9 +238,13 @@ const OrderDetailsScreen = ({ navigation, route }) => {
 
               {category.products.map((product) => (
                 <View key={product.id} style={styles.productCard}>
-                  <Image
-                    source={{ uri: product.image }}
+                  <FastImage
+                    source={{
+                      uri: product.image,
+                      priority: FastImage.priority.normal,
+                    }}
                     style={styles.productImage}
+                    resizeMode={FastImage.resizeMode.cover}
                   />
 
                   <View style={{ flex: 1 }}>

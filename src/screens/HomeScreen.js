@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-} from 'react-native';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { View, Text, StyleSheet, StatusBar } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedScrollHandler,
@@ -31,26 +32,12 @@ import {
   subscribeNotificationBadgeCount,
 } from '../services/oneSignalService';
 
-// Stage 3: the "Total Orders" summary card collapses to nothing between
-// 120px and 180px of scroll so the list takes over the viewport.
 const TOTAL_COLLAPSE_START = 120;
 const TOTAL_COLLAPSE_END = 180;
-// hp() is heightPercentageToDP (react-native-responsive-screen), a remote
-// function that cannot run on the UI runtime. Resolve every responsive value to
-// a plain number here on the JS thread so the worklets below only close over
-// numbers (never call hp() inside an interpolate range).
 const TOTAL_CARD_H = hp('9.5%');
 const TOTAL_MARGIN_BOTTOM = hp('1.8%');
 const TOTAL_TRANSLATE_Y = hp('2%');
 
-// The collapsing chrome (stats bar + total card) is rendered as an absolute
-// overlay so its per-frame height changes never relayout the list beneath it
-// (the old flex layout grew the FlatList every frame → a layout pass per
-// frame). The list reserves this much top padding for the chrome's expanded
-// height; the overlay's opaque background hides rows scrolling under it. Since
-// that background and the list's backdrop are both colors.background, the small
-// difference between the chrome's collapse rate and the scroll distance is
-// invisible.
 const CHROME_TOP_GAP = hp('1.8%');
 const CHROME_EXPANDED_H =
   CHROME_TOP_GAP +
@@ -62,13 +49,8 @@ const CHROME_EXPANDED_H =
 const HomeScreen = ({ navigation, route }) => {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-
-  // Single shared scroll value drives every dashboard interpolation. As a
-  // Reanimated shared value updated from a UI-thread scroll handler, none of
-  // the scroll-driven work touches the JS thread — so it stays smooth even on
-  // a slow drag.
   const scrollY = useSharedValue(0);
-  const onScroll = useAnimatedScrollHandler((event) => {
+  const onScroll = useAnimatedScrollHandler(event => {
     scrollY.value = event.contentOffset.y;
   });
   const totalAnim = useAnimatedStyle(() => ({
@@ -123,6 +105,7 @@ const HomeScreen = ({ navigation, route }) => {
   const hasInitializedRef = useRef(false);
   const skipNextStatusFetchRef = useRef(false);
 
+  console.log(ordersData, 'ordersData===>');
   const statusToApiValue = {
     Pending: 'pending',
     Picking: 'picking',
@@ -133,8 +116,6 @@ const HomeScreen = ({ navigation, route }) => {
     if (refresh) {
       setIsRefreshing(true);
     } else {
-      // Reset scroll position so the chrome overlay and list padding stay in
-      // sync when the FlatList remounts after a tab switch.
       scrollY.value = 0;
       setIsLoading(true);
     }
@@ -150,8 +131,8 @@ const HomeScreen = ({ navigation, route }) => {
     } catch (error) {
       setErrorMessage(
         error?.response?.data?.message ||
-        error?.message ||
-        'Unable to fetch orders.'
+          error?.message ||
+          'Unable to fetch orders.',
       );
     } finally {
       setIsLoading(false);
@@ -184,7 +165,7 @@ const HomeScreen = ({ navigation, route }) => {
 
       const initialStatus =
         ['Pending', 'Picking', 'Packed'].find(
-          (status) => ordersByStatus[status].length > 0
+          status => ordersByStatus[status].length > 0,
         ) || 'Pending';
 
       setOrdersData(ordersByStatus[initialStatus]);
@@ -195,8 +176,8 @@ const HomeScreen = ({ navigation, route }) => {
     } catch (error) {
       setErrorMessage(
         error?.response?.data?.message ||
-        error?.message ||
-        'Unable to fetch orders.'
+          error?.message ||
+          'Unable to fetch orders.',
       );
     } finally {
       setIsLoading(false);
@@ -220,7 +201,9 @@ const HomeScreen = ({ navigation, route }) => {
   }, [selectedStatus]);
 
   useEffect(() => {
-    const unsubscribe = subscribeNotificationBadgeCount(setNotificationBadgeCount);
+    const unsubscribe = subscribeNotificationBadgeCount(
+      setNotificationBadgeCount,
+    );
     return unsubscribe;
   }, []);
 
@@ -231,7 +214,7 @@ const HomeScreen = ({ navigation, route }) => {
         return;
       }
       loadOrders(selectedStatus, true);
-    }, [selectedStatus])
+    }, [selectedStatus]),
   );
 
   useEffect(() => {
@@ -250,10 +233,9 @@ const HomeScreen = ({ navigation, route }) => {
   }, [route?.params?.storeName]);
 
   const renderOrderItem = ({ item }) => {
-    const slotText =
-      item.orderType === 'slot' ? item.slotTime : 'Express';
+    const slotText = item.orderType === 'slot' ? item.slotTime : 'Express';
     const formattedDateTime = formatOrderDateTime(item.orderDateTime);
-    const openOrderDetails = (mode) => {
+    const openOrderDetails = mode => {
       navigation.navigate('OrderDetails', {
         orderId: item.orderId,
         orderNumber: item.orderNumber,
@@ -287,7 +269,7 @@ const HomeScreen = ({ navigation, route }) => {
     );
   };
 
-  const formatOrderDateTime = (dateValue) => {
+  const formatOrderDateTime = dateValue => {
     if (!dateValue) {
       return '-';
     }
@@ -309,7 +291,8 @@ const HomeScreen = ({ navigation, route }) => {
     return `${day}-${month}-${year} ${hours}:${minutes} ${period}`;
   };
 
-  const pipelineTotal = statusCounts.Pending + statusCounts.Picking + statusCounts.Packed;
+  const pipelineTotal =
+    statusCounts.Pending + statusCounts.Picking + statusCounts.Packed;
 
   const statItems = useMemo(
     () => [
@@ -366,8 +349,8 @@ const HomeScreen = ({ navigation, route }) => {
     } catch (error) {
       setStartOrderError(
         error?.response?.data?.message ||
-        error?.message ||
-        'Unable to start picking for this order.'
+          error?.message ||
+          'Unable to start picking for this order.',
       );
     } finally {
       setIsStartingOrder(false);
@@ -376,7 +359,10 @@ const HomeScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.card} />
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.card}
+      />
       <View style={styles.container}>
         <AnimatedDashboardHeader
           scrollY={scrollY}
@@ -398,7 +384,7 @@ const HomeScreen = ({ navigation, route }) => {
           ) : (
             <Animated.FlatList
               data={ordersData}
-              keyExtractor={(item) => item.id}
+              keyExtractor={item => item.id}
               renderItem={renderOrderItem}
               showsVerticalScrollIndicator={false}
               refreshing={isRefreshing}
@@ -408,7 +394,11 @@ const HomeScreen = ({ navigation, route }) => {
               ListHeaderComponent={
                 errorMessage ? (
                   <View style={styles.errorCard}>
-                    <Icon name="alert-circle-outline" size={wp('5%')} color={colors.danger} />
+                    <Icon
+                      name="alert-circle-outline"
+                      size={wp('5%')}
+                      color={colors.danger}
+                    />
                     <Text style={styles.errorText}>{errorMessage}</Text>
                   </View>
                 ) : null
@@ -438,7 +428,11 @@ const HomeScreen = ({ navigation, route }) => {
             <Animated.View style={[styles.totalWrap, totalAnim]}>
               <View style={styles.totalCard}>
                 <View style={styles.totalIconCircle}>
-                  <Icon name="clipboard-text-outline" size={wp('5.5%')} color={colors.primary} />
+                  <Icon
+                    name="clipboard-text-outline"
+                    size={wp('5.5%')}
+                    color={colors.primary}
+                  />
                 </View>
                 <Text style={styles.totalText}>
                   Total {selectedStatus} Orders
@@ -471,99 +465,100 @@ const HomeScreen = ({ navigation, route }) => {
 
 export default HomeScreen;
 
-const makeStyles = (colors) => StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.card,
-  },
+const makeStyles = colors =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.card,
+    },
 
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
 
-  body: {
-    flex: 1,
-  },
+    body: {
+      flex: 1,
+    },
 
-  list: {
-    flex: 1,
-  },
+    list: {
+      flex: 1,
+    },
 
-  listContent: {
-    paddingTop: CHROME_EXPANDED_H,
-    paddingHorizontal: wp('4%'),
-    paddingBottom: 0,
-  },
+    listContent: {
+      paddingTop: CHROME_EXPANDED_H,
+      paddingHorizontal: wp('4%'),
+      paddingBottom: 0,
+    },
 
-  loadingWrap: {
-    flex: 1,
-    paddingTop: CHROME_EXPANDED_H,
-    paddingHorizontal: wp('4%'),
-  },
+    loadingWrap: {
+      flex: 1,
+      paddingTop: CHROME_EXPANDED_H,
+      paddingHorizontal: wp('4%'),
+    },
 
-  chrome: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    paddingTop: CHROME_TOP_GAP,
-    paddingHorizontal: wp('4%'),
-    backgroundColor: colors.background,
-  },
+    chrome: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      paddingTop: CHROME_TOP_GAP,
+      paddingHorizontal: wp('4%'),
+      backgroundColor: colors.background,
+    },
 
-  totalWrap: {
-    overflow: 'hidden',
-  },
+    totalWrap: {
+      overflow: 'hidden',
+    },
 
-  totalCard: {
-    backgroundColor: colors.card,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: RADIUS.lg,
-    paddingVertical: hp('1.6%'),
-    paddingHorizontal: wp('4%'),
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
+    totalCard: {
+      backgroundColor: colors.card,
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderRadius: RADIUS.lg,
+      paddingVertical: hp('1.6%'),
+      paddingHorizontal: wp('4%'),
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
 
-  totalIconCircle: {
-    width: wp('10%'),
-    height: wp('10%'),
-    borderRadius: wp('5%'),
-    backgroundColor: colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: wp('3%'),
-  },
+    totalIconCircle: {
+      width: wp('10%'),
+      height: wp('10%'),
+      borderRadius: wp('5%'),
+      backgroundColor: colors.primarySoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: wp('3%'),
+    },
 
-  totalText: {
-    flex: 1,
-    color: colors.textSecondary,
-    fontSize: FONT_SIZES.sm,
-    fontFamily: FONTS.openSans.semiBold,
-  },
+    totalText: {
+      flex: 1,
+      color: colors.textSecondary,
+      fontSize: FONT_SIZES.sm,
+      fontFamily: FONTS.openSans.semiBold,
+    },
 
-  totalCount: {
-    color: colors.textPrimary,
-    fontSize: FONT_SIZES.xl,
-    fontFamily: FONTS.openSans.bold,
-  },
+    totalCount: {
+      color: colors.textPrimary,
+      fontSize: FONT_SIZES.xl,
+      fontFamily: FONTS.openSans.bold,
+    },
 
-  errorCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: wp('2%'),
-    backgroundColor: colors.dangerLight,
-    borderRadius: RADIUS.md,
-    padding: wp('3%'),
-    marginBottom: hp('1.2%'),
-  },
+    errorCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: wp('2%'),
+      backgroundColor: colors.dangerLight,
+      borderRadius: RADIUS.md,
+      padding: wp('3%'),
+      marginBottom: hp('1.2%'),
+    },
 
-  errorText: {
-    flex: 1,
-    color: colors.danger,
-    fontFamily: FONTS.openSans.semiBold,
-    fontSize: FONT_SIZES.sm,
-  },
-});
+    errorText: {
+      flex: 1,
+      color: colors.danger,
+      fontFamily: FONTS.openSans.semiBold,
+      fontSize: FONT_SIZES.sm,
+    },
+  });
