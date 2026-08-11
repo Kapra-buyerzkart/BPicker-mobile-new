@@ -1,16 +1,37 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, type ReactNode } from 'react';
 import {
   Animated,
   Text,
   ActivityIndicator,
   StyleSheet,
   Pressable,
+  type StyleProp,
+  type TextStyle,
+  type ViewStyle,
 } from 'react-native';
 import { RADIUS, FONT_SIZES, SPACING, hp } from '../styles/theme';
 import { FONTS } from '../styles/typography';
 import { useTheme } from '../theme';
+import type { ThemeColors } from '../theme';
 
-const getVariants = (colors) => ({
+export type AppButtonVariant =
+  | 'primary'
+  | 'secondary'
+  | 'success'
+  | 'danger'
+  | 'neutral';
+
+export type AppButtonSize = 'sm' | 'lg';
+
+interface VariantColors {
+  bg: string;
+  fg: string;
+  border: string;
+}
+
+const getVariants = (
+  colors: ThemeColors,
+): Record<AppButtonVariant | 'disabledLook', VariantColors> => ({
   primary: { bg: colors.primary, fg: colors.white, border: 'transparent' },
   secondary: { bg: colors.card, fg: colors.primary, border: colors.primary },
   success: { bg: colors.success, fg: colors.white, border: 'transparent' },
@@ -18,6 +39,18 @@ const getVariants = (colors) => ({
   neutral: { bg: colors.surface, fg: colors.textSecondary, border: colors.border },
   disabledLook: { bg: colors.disabledBackground, fg: colors.textMuted, border: 'transparent' },
 });
+
+export interface AppButtonProps {
+  label?: string;
+  onPress?: () => void;
+  loading?: boolean;
+  disabled?: boolean;
+  variant?: AppButtonVariant;
+  size?: AppButtonSize;
+  icon?: ReactNode;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
+}
 
 const AppButton = ({
   label,
@@ -29,7 +62,7 @@ const AppButton = ({
   icon = null,
   style,
   textStyle,
-}) => {
+}: AppButtonProps) => {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const variants = useMemo(() => getVariants(colors), [colors]);
@@ -39,7 +72,7 @@ const AppButton = ({
   const variantColors = isDisabled && variant === 'primary' ? variants.disabledLook : variants[variant] || variants.primary;
   const height = size === 'sm' ? hp('5.2%') : hp('6.4%');
 
-  const animateTo = (value) => {
+  const animateTo = (value: number) => {
     Animated.spring(scale, {
       toValue: value,
       useNativeDriver: true,
@@ -81,7 +114,7 @@ const AppButton = ({
 
 export default AppButton;
 
-const makeStyles = () => StyleSheet.create({
+const makeStyles = (_colors: ThemeColors) => StyleSheet.create({
   wrapper: {
     alignItems: 'stretch',
   },

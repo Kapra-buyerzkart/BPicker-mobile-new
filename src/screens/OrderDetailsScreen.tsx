@@ -13,6 +13,9 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { wp, hp, RADIUS, FONT_SIZES } from '../styles/theme';
 import { useTheme } from '../theme';
+import type { ThemeColors } from '../theme';
+import type { OrderDetails, OrderItem } from '../types/api';
+import type { RootStackScreenProps } from '../types/navigation';
 import { FONTS } from '../styles/typography';
 import { getOrderDetails, updateOrderStatus } from '../services/ordersService';
 import AppHeader from '../components/AppHeader';
@@ -21,8 +24,15 @@ import ConfirmModal from '../components/ConfirmModal';
 
 const CHECKBOX_STORAGE_KEY_PREFIX = '@picker/order_checked_items';
 
-const groupItemsByCategory = items => {
-  const grouped = items.reduce((acc, item) => {
+interface ProductCategory {
+  title: string;
+  products: OrderItem[];
+}
+
+type CheckedMap = Record<string, boolean>;
+
+const groupItemsByCategory = (items: OrderItem[]): ProductCategory[] => {
+  const grouped = items.reduce<Record<string, OrderItem[]>>((acc, item) => {
     const key = item.category || 'Items';
     if (!acc[key]) {
       acc[key] = [];
@@ -37,7 +47,10 @@ const groupItemsByCategory = items => {
   }));
 };
 
-const OrderDetailsScreen = ({ navigation, route }) => {
+const OrderDetailsScreen = ({
+  navigation,
+  route,
+}: RootStackScreenProps<'OrderDetails'>) => {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const orderId = route?.params?.orderId;
@@ -46,7 +59,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
-  const [orderDetails, setOrderDetails] = useState({
+  const [orderDetails, setOrderDetails] = useState<OrderDetails>({
     orderId: 0,
     orderNumber: orderNumberFromRoute || '#ORD-NA',
     customer: '-',
@@ -55,7 +68,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     phone: '-',
     items: [],
   });
-  const [checkedItems, setCheckedItems] = useState({});
+  const [checkedItems, setCheckedItems] = useState<CheckedMap>({});
   const [isCompleteConfirmVisible, setIsCompleteConfirmVisible] =
     useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
@@ -75,22 +88,28 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   const progressPct =
     allProducts.length > 0 ? (checkedCount / allProducts.length) * 100 : 0;
 
-  const getCheckboxStorageKey = id => `${CHECKBOX_STORAGE_KEY_PREFIX}_${id}`;
+  const getCheckboxStorageKey = (id: number | string) =>
+    `${CHECKBOX_STORAGE_KEY_PREFIX}_${id}`;
 
-  const loadSavedCheckedItems = async id => {
+  const loadSavedCheckedItems = async (
+    id?: number | string | null,
+  ): Promise<CheckedMap> => {
     if (!id) {
       return {};
     }
 
     try {
       const value = await AsyncStorage.getItem(getCheckboxStorageKey(id));
-      return value ? JSON.parse(value) : {};
+      return value ? (JSON.parse(value) as CheckedMap) : {};
     } catch {
       return {};
     }
   };
 
-  const saveCheckedItems = async (id, map) => {
+  const saveCheckedItems = async (
+    id: number | string | undefined | null,
+    map: CheckedMap,
+  ) => {
     if (!id) {
       return;
     }
@@ -113,7 +132,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
           details.orderId || orderId,
         );
 
-        const initialCheckedMap = details.items.reduce((acc, item) => {
+        const initialCheckedMap = details.items.reduce<CheckedMap>((acc, item) => {
           if (Object.prototype.hasOwnProperty.call(savedChecked, item.id)) {
             acc[item.id] = Boolean(savedChecked[item.id]);
           } else {
@@ -126,7 +145,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
           setOrderDetails(details);
           setCheckedItems(initialCheckedMap);
         }
-      } catch (error) {
+      } catch (error: any) {
         if (isMounted) {
           setErrorMessage(
             error?.response?.data?.message ||
@@ -148,7 +167,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     };
   }, [orderId, orderNumberFromRoute]);
 
-  const toggleCheck = async id => {
+  const toggleCheck = async (id: string) => {
     if (isReadOnly) {
       return;
     }
@@ -164,7 +183,15 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     });
   };
 
-  const InfoRow = ({ label, value, isLast }) => (
+  const InfoRow = ({
+    label,
+    value,
+    isLast,
+  }: {
+    label: string;
+    value: string;
+    isLast?: boolean;
+  }) => (
     <View style={[styles.infoRow, isLast && styles.infoRowLast]}>
       <Text style={styles.infoLabel}>{label}</Text>
       <Text style={styles.infoValue}>{value}</Text>
@@ -187,7 +214,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
       });
       setIsCompleteConfirmVisible(false);
       navigation.goBack();
-    } catch (error) {
+    } catch (error: any) {
       setCompleteError(
         error?.response?.data?.message ||
           error?.message ||
@@ -339,7 +366,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
 
 export default OrderDetailsScreen;
 
-const makeStyles = colors =>
+const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     safeArea: {
       flex: 1,

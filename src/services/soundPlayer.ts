@@ -16,7 +16,6 @@ export function playOrderAlertSound(): void {
   try {
     RingtonePlayer?.playOrderAlert();
   } catch {
-    // ignore playback errors
   }
 }
 
@@ -28,6 +27,5 @@ export function stopOrderAlertSound(): void {
   try {
     RingtonePlayer?.stop();
   } catch {
-    // ignore
   }
 }

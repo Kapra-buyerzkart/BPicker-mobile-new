@@ -10,23 +10,21 @@ import Animated, {
   withRepeat,
   runOnJS,
   Easing,
-  interpolate,
 } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../theme';
 import { FONTS } from '../styles/typography';
 import { wp, hp } from '../styles/theme';
 
-// Minimum time the splash entrance animation takes before exit can start.
 const MIN_DISPLAY_MS = 3000;
 
-const SplashScreen = ({ isReady, onAnimationComplete }) => {
-  const { colors } = useTheme();
+export interface SplashScreenProps {
+  isReady?: boolean;
+  onAnimationComplete?: () => void;
+}
 
-  // ── Shared values ──────────────────────────────────────────────
-  const logoScale = useSharedValue(0);
-  const logoOpacity = useSharedValue(0);
-  const logoRotate = useSharedValue(-15); // degrees
+const SplashScreen = ({ isReady, onAnimationComplete }: SplashScreenProps) => {
+  const { colors } = useTheme();
 
   const titleTranslateY = useSharedValue(30);
   const titleOpacity = useSharedValue(0);
@@ -40,12 +38,9 @@ const SplashScreen = ({ isReady, onAnimationComplete }) => {
   const exitScale = useSharedValue(1);
   const exitOpacity = useSharedValue(1);
 
-  // Track whether entrance animation is done so we don't exit too early.
-  const entranceDone = useSharedValue(0); // 0 = not done, 1 = done
+  const entranceDone = useSharedValue(0);
 
-  // ── Entrance animation sequence ────────────────────────────────
   useEffect(() => {
-    // Stage 0: Glow ring starts pulsing immediately
     glowOpacity.value = withDelay(100, withTiming(0.6, { duration: 400 }));
     glowScale.value = withDelay(
       100,
@@ -60,37 +55,23 @@ const SplashScreen = ({ isReady, onAnimationComplete }) => {
             easing: Easing.inOut(Easing.ease),
           }),
         ),
-        -1, // infinite
+        -1,
         true,
       ),
     );
 
-    // Stage 1 (200ms): Logo scales in with spring bounce
-    logoOpacity.value = withDelay(200, withTiming(1, { duration: 300 }));
-    logoScale.value = withDelay(
-      200,
-      withSpring(1, { damping: 12, stiffness: 150 }),
-    );
-    logoRotate.value = withDelay(
-      200,
-      withSpring(0, { damping: 14, stiffness: 100 }),
-    );
-
-    // Stage 2 (500ms): Title slides up and fades in
     titleOpacity.value = withDelay(500, withTiming(1, { duration: 350 }));
     titleTranslateY.value = withDelay(
       500,
       withSpring(0, { damping: 16, stiffness: 120 }),
     );
 
-    // Stage 3 (800ms): Tagline fades in
     taglineOpacity.value = withDelay(800, withTiming(1, { duration: 400 }));
     taglineTranslateY.value = withDelay(
       800,
       withSpring(0, { damping: 16, stiffness: 120 }),
     );
 
-    // Mark entrance as complete after MIN_DISPLAY_MS
     const timer = setTimeout(() => {
       entranceDone.value = 1;
     }, MIN_DISPLAY_MS);
@@ -99,7 +80,6 @@ const SplashScreen = ({ isReady, onAnimationComplete }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Exit animation (triggered when isReady + entrance done) ────
   const triggerExit = useCallback(() => {
     exitScale.value = withTiming(1.15, {
       duration: 350,
@@ -116,8 +96,6 @@ const SplashScreen = ({ isReady, onAnimationComplete }) => {
   useEffect(() => {
     if (!isReady) return;
 
-    // If entrance is already done, exit immediately.
-    // Otherwise wait for it.
     if (entranceDone.value === 1) {
       triggerExit();
     } else {
@@ -131,7 +109,6 @@ const SplashScreen = ({ isReady, onAnimationComplete }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReady, triggerExit]);
 
-  // ── Animated styles ────────────────────────────────────────────
 
   const containerStyle = useAnimatedStyle(() => ({
     transform: [{ scale: exitScale.value }],
@@ -141,14 +118,6 @@ const SplashScreen = ({ isReady, onAnimationComplete }) => {
   const glowStyle = useAnimatedStyle(() => ({
     transform: [{ scale: glowScale.value }],
     opacity: glowOpacity.value,
-  }));
-
-  const logoStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: logoScale.value },
-      { rotate: `${logoRotate.value}deg` },
-    ],
-    opacity: logoOpacity.value,
   }));
 
   const titleStyle = useAnimatedStyle(() => ({
@@ -161,7 +130,6 @@ const SplashScreen = ({ isReady, onAnimationComplete }) => {
     opacity: taglineOpacity.value,
   }));
 
-  // Decorative floating circles – configuration driven
   const CIRCLE_CONFIG = [
     { delay: 600, maxOpacity: 0.3, travel: 8, duration: 1500 },
     { delay: 750, maxOpacity: 0.25, travel: 6, duration: 1800 },
@@ -175,7 +143,6 @@ const SplashScreen = ({ isReady, onAnimationComplete }) => {
     { delay: 950, maxOpacity: 0.14, travel: 8, duration: 1700 },
   ];
 
-  // Create shared values for each circle
   const c1Op = useSharedValue(0);
   const c1Y = useSharedValue(0);
   const c2Op = useSharedValue(0);
@@ -272,7 +239,6 @@ const SplashScreen = ({ isReady, onAnimationComplete }) => {
     <View style={[styles.root, { backgroundColor: colors.primary }]}>
       <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
       <Animated.View style={[styles.content, containerStyle]}>
-        {/* Floating decorative circles */}
         <Animated.View style={[styles.dot, styles.dot1, dot1Style]} />
         <Animated.View style={[styles.dot, styles.dot2, dot2Style]} />
         <Animated.View style={[styles.dot, styles.dot3, dot3Style]} />
@@ -284,20 +250,14 @@ const SplashScreen = ({ isReady, onAnimationComplete }) => {
         <Animated.View style={[styles.dot, styles.dot9, dot9Style]} />
         <Animated.View style={[styles.dot, styles.dot10, dot10Style]} />
 
-        {/* Glow ring behind logo */}
         <Animated.View style={[styles.glowRing, glowStyle]} />
 
-        {/* Logo circle */}
-        {/* <Animated.View style={[styles.logoCircle, logoStyle]}> */}
         <Icon name="scooter" size={wp('12%')} color="#FFFFFF" />
-        {/* </Animated.View> */}
 
-        {/* App name */}
         <Animated.View style={titleStyle}>
           <Text style={styles.title}>BPicker</Text>
         </Animated.View>
 
-        {/* Tagline */}
         <Animated.View style={taglineStyle}>
           <Text style={styles.tagline}>Pick · Pack · Deliver</Text>
         </Animated.View>
@@ -308,7 +268,6 @@ const SplashScreen = ({ isReady, onAnimationComplete }) => {
 
 export default SplashScreen;
 
-const LOGO_SIZE = wp('22%');
 const GLOW_SIZE = wp('36%');
 
 const styles = StyleSheet.create({
@@ -330,21 +289,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.18)',
   },
-  logoCircle: {
-    width: LOGO_SIZE,
-    height: LOGO_SIZE,
-    borderRadius: LOGO_SIZE / 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: hp('2%'),
-    // Subtle shadow for depth
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
-  },
   title: {
     fontSize: wp('9%'),
     fontFamily: FONTS.openSans.extraBold,
@@ -360,7 +304,6 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     textAlign: 'center',
   },
-  // Decorative floating circles
   dot: {
     position: 'absolute',
     borderRadius: 999,

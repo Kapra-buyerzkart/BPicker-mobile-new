@@ -4,13 +4,38 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { RADIUS, FONT_SIZES, wp, hp } from '../styles/theme';
 import { FONTS } from '../styles/typography';
 import { useTheme } from '../theme';
+import type { ThemeColors } from '../theme';
 import AppButton from './AppButton';
 
-const getIcons = (colors) => ({
+export type ConfirmModalVariant = 'default' | 'success' | 'danger';
+
+interface ModalIcon {
+  name: string;
+  color: string;
+  bg: string;
+}
+
+const getIcons = (
+  colors: ThemeColors,
+): Record<ConfirmModalVariant, ModalIcon> => ({
   default: { name: 'help-circle-outline', color: colors.primary, bg: colors.primarySoft },
   success: { name: 'check-circle-outline', color: colors.success, bg: colors.successLight },
   danger: { name: 'alert-circle-outline', color: colors.danger, bg: colors.dangerLight },
 });
+
+export interface ConfirmModalProps {
+  visible?: boolean;
+  title?: string;
+  message?: string;
+  error?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  onConfirm?: () => void;
+  onCancel?: () => void;
+  loading?: boolean;
+  variant?: ConfirmModalVariant;
+  hideCancel?: boolean;
+}
 
 const ConfirmModal = ({
   visible,
@@ -24,7 +49,7 @@ const ConfirmModal = ({
   loading = false,
   variant = 'default',
   hideCancel = false,
-}) => {
+}: ConfirmModalProps) => {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const icons = useMemo(() => getIcons(colors), [colors]);
@@ -45,7 +70,7 @@ const ConfirmModal = ({
   }, [visible, scale, opacity]);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+    <Modal visible={!!visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={styles.overlay}>
         <Animated.View style={[styles.card, { opacity, transform: [{ scale }] }]}>
           <View style={[styles.iconCircle, { backgroundColor: icon.bg }]}>
@@ -81,7 +106,7 @@ const ConfirmModal = ({
 
 export default ConfirmModal;
 
-const makeStyles = (colors) => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: colors.overlay,

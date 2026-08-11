@@ -18,9 +18,19 @@ import { useFocusEffect } from '@react-navigation/native';
 import { FONTS } from '../styles/typography';
 import { RADIUS, FONT_SIZES, wp, hp } from '../styles/theme';
 import { useTheme } from '../theme';
+import type { ThemeColors } from '../theme';
+import type {
+  Order,
+  OrderStatusKey,
+  OrderStatusLabel,
+} from '../types/api';
+import type { RootStackScreenProps } from '../types/navigation';
+import type { OrderDetailsMode } from '../types/navigation';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AnimatedDashboardHeader from '../components/AnimatedDashboardHeader';
-import AnimatedStatsBar from '../components/AnimatedStatsBar';
+import AnimatedStatsBar, {
+  type StatsBarItem,
+} from '../components/AnimatedStatsBar';
 import OrderCard from '../components/OrderCard';
 import EmptyState from '../components/EmptyState';
 import ConfirmModal from '../components/ConfirmModal';
@@ -41,12 +51,14 @@ const TOTAL_TRANSLATE_Y = hp('2%');
 const CHROME_TOP_GAP = hp('1.8%');
 const CHROME_EXPANDED_H =
   CHROME_TOP_GAP +
-  hp('17%') + // AnimatedStatsBar EXPANDED_H
-  hp('1.4%') + // stats grid marginBottom
+  hp('17%') +
+  hp('1.4%') +
   TOTAL_CARD_H +
   TOTAL_MARGIN_BOTTOM;
 
-const HomeScreen = ({ navigation, route }) => {
+const STATUS_ORDER: OrderStatusLabel[] = ['Pending', 'Picking', 'Packed'];
+
+const HomeScreen = ({ navigation, route }: RootStackScreenProps<'Home'>) => {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const scrollY = useSharedValue(0);
@@ -84,8 +96,9 @@ const HomeScreen = ({ navigation, route }) => {
     ],
   }));
 
-  const [selectedStatus, setSelectedStatus] = useState('Pending');
-  const [ordersData, setOrdersData] = useState([]);
+  const [selectedStatus, setSelectedStatus] =
+    useState<OrderStatusLabel>('Pending');
+  const [ordersData, setOrdersData] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -96,7 +109,9 @@ const HomeScreen = ({ navigation, route }) => {
   const [notificationBadgeCount, setNotificationBadgeCount] = useState(0);
   const [selectedOrderId, setSelectedOrderId] = useState(0);
   const [selectedOrderNumber, setSelectedOrderNumber] = useState('');
-  const [statusCounts, setStatusCounts] = useState({
+  const [statusCounts, setStatusCounts] = useState<
+    Record<OrderStatusLabel, number>
+  >({
     Pending: 0,
     Picking: 0,
     Packed: 0,
@@ -105,14 +120,16 @@ const HomeScreen = ({ navigation, route }) => {
   const hasInitializedRef = useRef(false);
   const skipNextStatusFetchRef = useRef(false);
 
-  console.log(ordersData, 'ordersData===>');
-  const statusToApiValue = {
+  const statusToApiValue: Record<OrderStatusLabel, OrderStatusKey> = {
     Pending: 'pending',
     Picking: 'picking',
     Packed: 'packed',
   };
 
-  const loadOrders = async (statusLabel = selectedStatus, refresh = false) => {
+  const loadOrders = async (
+    statusLabel: OrderStatusLabel = selectedStatus,
+    refresh = false,
+  ) => {
     if (refresh) {
       setIsRefreshing(true);
     } else {
@@ -128,7 +145,7 @@ const HomeScreen = ({ navigation, route }) => {
         ...prev,
         [statusLabel]: orders.length,
       }));
-    } catch (error) {
+    } catch (error: any) {
       setErrorMessage(
         error?.response?.data?.message ||
           error?.message ||
@@ -151,7 +168,7 @@ const HomeScreen = ({ navigation, route }) => {
         getOrders(statusToApiValue.Packed),
       ]);
 
-      const ordersByStatus = {
+      const ordersByStatus: Record<OrderStatusLabel, Order[]> = {
         Pending: pendingOrders,
         Picking: pickingOrders,
         Packed: packedOrders,
@@ -164,16 +181,15 @@ const HomeScreen = ({ navigation, route }) => {
       });
 
       const initialStatus =
-        ['Pending', 'Picking', 'Packed'].find(
-          status => ordersByStatus[status].length > 0,
-        ) || 'Pending';
+        STATUS_ORDER.find(status => ordersByStatus[status].length > 0) ||
+        'Pending';
 
       setOrdersData(ordersByStatus[initialStatus]);
       if (initialStatus !== selectedStatus) {
         skipNextStatusFetchRef.current = true;
         setSelectedStatus(initialStatus);
       }
-    } catch (error) {
+    } catch (error: any) {
       setErrorMessage(
         error?.response?.data?.message ||
           error?.message ||
@@ -232,10 +248,10 @@ const HomeScreen = ({ navigation, route }) => {
     loadStoreName();
   }, [route?.params?.storeName]);
 
-  const renderOrderItem = ({ item }) => {
+  const renderOrderItem = ({ item }: { item: Order }) => {
     const slotText = item.orderType === 'slot' ? item.slotTime : 'Express';
     const formattedDateTime = formatOrderDateTime(item.orderDateTime);
-    const openOrderDetails = mode => {
+    const openOrderDetails = (mode: OrderDetailsMode) => {
       navigation.navigate('OrderDetails', {
         orderId: item.orderId,
         orderNumber: item.orderNumber,
@@ -269,7 +285,7 @@ const HomeScreen = ({ navigation, route }) => {
     );
   };
 
-  const formatOrderDateTime = dateValue => {
+  const formatOrderDateTime = (dateValue: string) => {
     if (!dateValue) {
       return '-';
     }
@@ -294,7 +310,7 @@ const HomeScreen = ({ navigation, route }) => {
   const pipelineTotal =
     statusCounts.Pending + statusCounts.Picking + statusCounts.Packed;
 
-  const statItems = useMemo(
+  const statItems = useMemo<StatsBarItem[]>(
     () => [
       {
         color: colors.warning,
@@ -346,7 +362,7 @@ const HomeScreen = ({ navigation, route }) => {
         orderNumber: selectedOrderNumber,
         mode: 'edit',
       });
-    } catch (error) {
+    } catch (error: any) {
       setStartOrderError(
         error?.response?.data?.message ||
           error?.message ||
@@ -374,9 +390,6 @@ const HomeScreen = ({ navigation, route }) => {
         />
 
         <View style={styles.body}>
-          {/* Scrolling content fills the whole body at a constant height. It
-              reserves CHROME_EXPANDED_H of top padding for the overlay below,
-              so morphing the chrome never resizes this list. */}
           {isLoading ? (
             <View style={styles.loadingWrap}>
               <OrderListSkeleton count={3} />
@@ -415,16 +428,9 @@ const HomeScreen = ({ navigation, route }) => {
             />
           )}
 
-          {/* Collapsing chrome overlay. Absolute + opaque background, so its
-              height animations (stats morph, total collapse) cost a tiny
-              subtree layout instead of relaying out the whole list. box-none
-              lets the list scroll/refresh through the empty areas while the
-              stat chips still receive taps. */}
           <View style={styles.chrome} pointerEvents="box-none">
-            {/* Summary cards → morphing sticky toolbar */}
             <AnimatedStatsBar scrollY={scrollY} items={statItems} />
 
-            {/* Total — collapses away on deep scroll */}
             <Animated.View style={[styles.totalWrap, totalAnim]}>
               <View style={styles.totalCard}>
                 <View style={styles.totalIconCircle}>
@@ -465,7 +471,7 @@ const HomeScreen = ({ navigation, route }) => {
 
 export default HomeScreen;
 
-const makeStyles = colors =>
+const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     safeArea: {
       flex: 1,

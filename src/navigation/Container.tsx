@@ -22,14 +22,16 @@ import {
   requestPushPermissionIfNeeded,
 } from '../services/oneSignalService';
 import SplashScreen from '../components/SplashScreen';
+import type { RootStackParamList } from '../types/navigation';
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   const { colors, isDark } = useTheme();
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [splashVisible, setSplashVisible] = useState(true);
-  const [initialRouteName, setInitialRouteName] = useState('Login');
+  const [initialRouteName, setInitialRouteName] =
+    useState<keyof RootStackParamList>('Login');
 
   const navigationTheme = useMemo(() => {
     const base = isDark ? DarkTheme : DefaultTheme;
@@ -70,7 +72,7 @@ export default function App() {
               : null;
 
           if (externalId) {
-            const tags = {
+            const tags: Record<string, string> = {
               custId:
                 storedUser?.custId != null ? String(storedUser.custId) : '',
               storeId:
@@ -129,14 +131,12 @@ export default function App() {
             headerShown: false,
           }}
         >
-          {/* Auth Screens */}
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen
             name="ChangePassword"
             component={ChangePasswordScreen}
           />
 
-          {/* App Screens */}
           <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen name="Picking" component={PickingScreen} />
           <Stack.Screen name="Packed" component={PackedScreen} />

@@ -1,8 +1,19 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme';
+import type { ThemeColors } from '../theme';
 
-export default function BadgeIcon({ count = 0, children, max = 99 }) {
+export interface BadgeIconProps {
+  count?: number;
+  children?: ReactNode;
+  max?: number;
+}
+
+export default function BadgeIcon({
+  count = 0,
+  children,
+  max = 99,
+}: BadgeIconProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const normalizedCount = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
@@ -20,7 +31,7 @@ export default function BadgeIcon({ count = 0, children, max = 99 }) {
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     position: 'relative',
     alignItems: 'center',

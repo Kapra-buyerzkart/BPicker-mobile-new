@@ -1,11 +1,24 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, type ReactNode } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { FONT_SIZES, wp, hp } from '../styles/theme';
 import { FONTS } from '../styles/typography';
 import { useTheme } from '../theme';
+import type { ThemeColors } from '../theme';
 
-const AppHeader = ({ title, subtitle, onBackPress, rightContent = null }) => {
+export interface AppHeaderProps {
+  title?: string;
+  subtitle?: string;
+  onBackPress?: () => void;
+  rightContent?: ReactNode;
+}
+
+const AppHeader = ({
+  title,
+  subtitle,
+  onBackPress,
+  rightContent = null,
+}: AppHeaderProps) => {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -36,7 +49,7 @@ const AppHeader = ({ title, subtitle, onBackPress, rightContent = null }) => {
 
 export default AppHeader;
 
-const makeStyles = (colors) => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',

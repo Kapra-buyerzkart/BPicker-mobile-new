@@ -1,8 +1,22 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import React, { useMemo, useState, type ReactNode } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  type TextInputProps,
+} from 'react-native';
 import { RADIUS, FONT_SIZES, wp, hp } from '../styles/theme';
 import { FONTS } from '../styles/typography';
 import { useTheme } from '../theme';
+import type { ThemeColors } from '../theme';
+
+export interface AppTextInputProps extends TextInputProps {
+  label?: string;
+  rightIcon?: ReactNode;
+  leftIcon?: ReactNode;
+  error?: string;
+}
 
 const AppTextInput = ({
   label,
@@ -13,7 +27,7 @@ const AppTextInput = ({
   error,
   editable = true,
   ...textInputProps
-}) => {
+}: AppTextInputProps) => {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -50,7 +64,7 @@ const AppTextInput = ({
 
 export default AppTextInput;
 
-const makeStyles = (colors) =>
+const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     wrapper: {
       width: '100%',

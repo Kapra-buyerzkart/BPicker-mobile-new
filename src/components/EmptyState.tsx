@@ -4,8 +4,19 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { FONT_SIZES, wp, hp } from '../styles/theme';
 import { FONTS } from '../styles/typography';
 import { useTheme } from '../theme';
+import type { ThemeColors } from '../theme';
 
-const EmptyState = ({ icon = 'package-variant', title = 'Nothing here', subtitle = '' }) => {
+export interface EmptyStateProps {
+  icon?: string;
+  title?: string;
+  subtitle?: string;
+}
+
+const EmptyState = ({
+  icon = 'package-variant',
+  title = 'Nothing here',
+  subtitle = '',
+}: EmptyStateProps) => {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -22,7 +33,7 @@ const EmptyState = ({ icon = 'package-variant', title = 'Nothing here', subtitle
 
 export default EmptyState;
 
-const makeStyles = (colors) => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',

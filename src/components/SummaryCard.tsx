@@ -4,14 +4,33 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { RADIUS, FONT_SIZES, wp, hp } from '../styles/theme';
 import { FONTS } from '../styles/typography';
 import { useTheme } from '../theme';
+import type { ThemeColors } from '../theme';
 
-const SummaryCard = ({ color, icon, title, count = 0, total = 0, onPress, isActive }) => {
+export interface SummaryCardProps {
+  color: string;
+  icon: string;
+  title: string;
+  count?: number;
+  total?: number;
+  onPress?: () => void;
+  isActive?: boolean;
+}
+
+const SummaryCard = ({
+  color,
+  icon,
+  title,
+  count = 0,
+  total = 0,
+  onPress,
+  isActive,
+}: SummaryCardProps) => {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const scale = useRef(new Animated.Value(1)).current;
   const sharePct = total > 0 ? Math.min(100, Math.round((count / total) * 100)) : 0;
 
-  const animateTo = (value) => {
+  const animateTo = (value: number) => {
     Animated.spring(scale, { toValue: value, useNativeDriver: true, speed: 40, bounciness: 6 }).start();
   };
 
@@ -43,7 +62,7 @@ const SummaryCard = ({ color, icon, title, count = 0, total = 0, onPress, isActi
 
 export default SummaryCard;
 
-const makeStyles = (colors) => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   card: {
     backgroundColor: colors.card,
     borderRadius: RADIUS.lg,

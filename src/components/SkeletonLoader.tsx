@@ -1,9 +1,29 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, View, StyleSheet } from 'react-native';
+import {
+  Animated,
+  View,
+  StyleSheet,
+  type DimensionValue,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { RADIUS, wp, hp } from '../styles/theme';
 import { useTheme } from '../theme';
+import type { ThemeColors } from '../theme';
 
-export const SkeletonBlock = ({ width, height, radius = RADIUS.sm, style }) => {
+export interface SkeletonBlockProps {
+  width?: DimensionValue;
+  height?: DimensionValue;
+  radius?: number;
+  style?: StyleProp<ViewStyle>;
+}
+
+export const SkeletonBlock = ({
+  width,
+  height,
+  radius = RADIUS.sm,
+  style,
+}: SkeletonBlockProps) => {
   const { colors } = useTheme();
   const opacity = useRef(new Animated.Value(0.4)).current;
 
@@ -48,7 +68,11 @@ export const OrderCardSkeleton = () => {
   );
 };
 
-export const OrderListSkeleton = ({ count = 3 }) => (
+export interface OrderListSkeletonProps {
+  count?: number;
+}
+
+export const OrderListSkeleton = ({ count = 3 }: OrderListSkeletonProps) => (
   <View>
     {Array.from({ length: count }).map((_, index) => (
       <OrderCardSkeleton key={index} />
@@ -56,7 +80,7 @@ export const OrderListSkeleton = ({ count = 3 }) => (
   </View>
 );
 
-const makeStyles = (colors) => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   card: {
     backgroundColor: colors.card,
     borderRadius: RADIUS.lg,

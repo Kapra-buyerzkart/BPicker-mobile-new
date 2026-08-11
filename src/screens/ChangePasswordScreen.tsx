@@ -11,6 +11,8 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { wp, hp, RADIUS, FONT_SIZES } from '../styles/theme';
 import { useTheme } from '../theme';
+import type { ThemeColors } from '../theme';
+import type { RootStackScreenProps } from '../types/navigation';
 import { FONTS } from '../styles/typography';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { changePickerPassword } from '../services/authService';
@@ -19,7 +21,9 @@ import AppTextInput from '../components/AppTextInput';
 import AppButton from '../components/AppButton';
 import ConfirmModal from '../components/ConfirmModal';
 
-const ChangePasswordScreen = ({ navigation }) => {
+const ChangePasswordScreen = ({
+    navigation,
+}: RootStackScreenProps<'ChangePassword'>) => {
     const { colors } = useTheme();
     const styles = useMemo(() => makeStyles(colors), [colors]);
     const [showOldPassword, setShowOldPassword] = useState(false);
@@ -65,7 +69,7 @@ const ChangePasswordScreen = ({ navigation }) => {
             setOldPassword('');
             setNewPassword('');
             setConfirmPassword('');
-        } catch (error) {
+        } catch (error: any) {
             setErrorMessage(
                 error?.response?.data?.message ||
                 error?.message ||
@@ -76,7 +80,10 @@ const ChangePasswordScreen = ({ navigation }) => {
         }
     };
 
-    const eyeToggle = (visible, setVisible) => (
+    const eyeToggle = (
+        visible: boolean,
+        setVisible: (next: boolean) => void,
+    ) => (
         <TouchableOpacity onPress={() => setVisible(!visible)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Icon
                 name={visible ? 'eye-off-outline' : 'eye-outline'}
@@ -166,7 +173,7 @@ const ChangePasswordScreen = ({ navigation }) => {
 
 export default ChangePasswordScreen;
 
-const makeStyles = (colors) => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     safeArea: {
         flex: 1,
         backgroundColor: colors.card,

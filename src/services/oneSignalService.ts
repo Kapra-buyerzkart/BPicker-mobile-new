@@ -34,7 +34,6 @@ function emitBadgeCount(count: number): void {
     try {
       listener(count);
     } catch {
-      // ignore listener errors
     }
   });
 }
@@ -53,7 +52,6 @@ export async function setNotificationBadgeCount(count: number): Promise<number> 
   try {
     await AsyncStorage.setItem(NOTIFICATION_BADGE_STORAGE_KEY, String(normalized));
   } catch {
-    // ignore storage write errors
   }
   emitBadgeCount(normalized);
   return normalized;
@@ -112,7 +110,6 @@ function scheduleEnsureExternalId(): void {
 
       OneSignal.login(expectedExternalId);
     } catch {
-      // ignore and retry below
     } finally {
       ensureExternalIdAttempt += 1;
       if (ensureExternalIdAttempt < 6) {
@@ -131,7 +128,6 @@ export function initOneSignal(): void {
 
   if (!isValidOneSignalAppId(ONE_SIGNAL_APP_ID)) {
     if (__DEV__) {
-      // eslint-disable-next-line no-console
       console.warn(
         '[OneSignal] Skipping init: set a real ONE_SIGNAL_APP_ID in src/config/oneSignal.ts'
       );
@@ -158,9 +154,6 @@ export function initOneSignal(): void {
     const incrementBy = parseBadgeCount(notification?.badgeIncrement) || 1;
     void incrementNotificationBadgeCount(incrementBy);
 
-    // The OS notification channel only rings when the system posts the notification
-    // (i.e. while the app is backgrounded). In the foreground we get this event
-    // instead, so play the alert sound explicitly.
     playOrderAlertSound();
   });
 
@@ -178,8 +171,6 @@ export async function requestPushPermissionIfNeeded(): Promise<boolean> {
       OneSignal.User.pushSubscription.optIn();
       return true;
     }
-
-    const canRequest = await OneSignal.Notifications.canRequestPermission();
 
     const accepted = await OneSignal.Notifications.requestPermission(true);
     if (accepted) {

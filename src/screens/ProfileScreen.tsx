@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
     View,
     Text,
@@ -14,6 +14,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { wp, hp, RADIUS, FONT_SIZES } from '../styles/theme';
 import { FONTS } from '../styles/typography';
 import { useTheme } from '../theme';
+import type { ThemeColors } from '../theme';
+import type { PickerProfile } from '../types/api';
+import type { RootStackScreenProps } from '../types/navigation';
 import { getPickerProfile, logoutPickerAgent } from '../services/authService';
 import { oneSignalLogout } from '../services/oneSignalService';
 import AppHeader from '../components/AppHeader';
@@ -21,14 +24,19 @@ import ConfirmModal from '../components/ConfirmModal';
 
 const APP_VERSION = '0.0.1';
 
-const PROFILE_FIELDS = [
+interface ProfileField {
+    key: keyof PickerProfile;
+    label: string;
+    icon: string;
+}
+
+const PROFILE_FIELDS: ProfileField[] = [
     { key: 'emailId', label: 'Email', icon: 'email-outline' },
     { key: 'phoneNo', label: 'Mobile Number', icon: 'phone-outline' },
     { key: 'storeName', label: 'Store', icon: 'storefront-outline' },
 ];
 
-/** Hex (#RGB / #RRGGBB) -> rgba() with the given alpha. */
-const withAlpha = (hex, alpha) => {
+const withAlpha = (hex: string, alpha: number): string => {
     let value = String(hex || '').replace('#', '');
 
     if (value.length === 3) {
@@ -49,11 +57,17 @@ const withAlpha = (hex, alpha) => {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
-const SectionLabel = ({ styles, children }) => (
-    <Text style={styles.sectionLabel}>{children}</Text>
-);
+type ProfileStyles = ReturnType<typeof makeStyles>;
 
-const ProfileScreen = ({ navigation }) => {
+const SectionLabel = ({
+    styles,
+    children,
+}: {
+    styles: ProfileStyles;
+    children: ReactNode;
+}) => <Text style={styles.sectionLabel}>{children}</Text>;
+
+const ProfileScreen = ({ navigation }: RootStackScreenProps<'Profile'>) => {
     const { colors, isDark, toggleTheme } = useTheme();
     const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
 
@@ -61,7 +75,7 @@ const ProfileScreen = ({ navigation }) => {
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
-    const [profile, setProfile] = useState({
+    const [profile, setProfile] = useState<PickerProfile>({
         fullName: '',
         emailId: '',
         phoneNo: '',
@@ -80,7 +94,7 @@ const ProfileScreen = ({ navigation }) => {
                 if (isMounted) {
                     setProfile(profileData);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 if (isMounted) {
                     setErrorMessage(
                         error?.response?.data?.message ||
@@ -113,7 +127,7 @@ const ProfileScreen = ({ navigation }) => {
                 index: 0,
                 routes: [{ name: 'Login' }],
             });
-        } catch (error) {
+        } catch (error: any) {
             setErrorMessage(
                 error?.response?.data?.message ||
                 error?.message ||
@@ -152,7 +166,6 @@ const ProfileScreen = ({ navigation }) => {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scroll}
             >
-                {/* Hero */}
                 <View style={styles.hero}>
                     <View style={styles.heroGlowTop} />
                     <View style={styles.heroGlowBottom} />
@@ -173,7 +186,6 @@ const ProfileScreen = ({ navigation }) => {
                     </View>
                 </View>
 
-                {/* Account details */}
                 <SectionLabel styles={styles}>Account Details</SectionLabel>
 
                 {isProfileLoading ? (
@@ -212,7 +224,6 @@ const ProfileScreen = ({ navigation }) => {
                     </View>
                 )}
 
-                {/* Preferences */}
                 <SectionLabel styles={styles}>Preferences</SectionLabel>
 
                 <View style={styles.card}>
@@ -240,7 +251,6 @@ const ProfileScreen = ({ navigation }) => {
                     </View>
                 </View>
 
-                {/* Account actions */}
                 <SectionLabel styles={styles}>Security</SectionLabel>
 
                 <View style={styles.card}>
@@ -303,9 +313,7 @@ const ProfileScreen = ({ navigation }) => {
 
 export default ProfileScreen;
 
-const makeStyles = (colors, isDark) => {
-    // Dark mode gets a slightly lifted surface so cards read above the canvas;
-    // light mode keeps the flat white-on-grey card language used app-wide.
+const makeStyles = (colors: ThemeColors, isDark: boolean) => {
     const cardBackground = isDark ? colors.surface : colors.card;
     const cardBorder = isDark ? withAlpha(colors.white, 0.06) : colors.border;
     const heroTint = isDark ? withAlpha(colors.primary, 0.16) : withAlpha(colors.primary, 0.1);
@@ -325,7 +333,6 @@ const makeStyles = (colors, isDark) => {
             alignItems: 'center',
         },
 
-        /* ---------- Hero ---------- */
 
         hero: {
             width: '100%',
@@ -423,7 +430,6 @@ const makeStyles = (colors, isDark) => {
             fontFamily: FONTS.openSans.semiBold,
         },
 
-        /* ---------- Sections ---------- */
 
         sectionLabel: {
             alignSelf: 'flex-start',
@@ -551,7 +557,6 @@ const makeStyles = (colors, isDark) => {
             opacity: 0.6,
         },
 
-        /* ---------- Logout ---------- */
 
         logoutButton: {
             width: '100%',

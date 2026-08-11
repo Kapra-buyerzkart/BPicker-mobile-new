@@ -4,13 +4,18 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { FONT_SIZES, wp } from '../styles/theme';
 import { FONTS } from '../styles/typography';
 import { useTheme } from '../theme';
+import type { ThemeColors } from '../theme';
 
 const STEPS = ['Pending', 'Picking', 'Packed'];
 
-const PipelineTracker = ({ currentStatus }) => {
+export interface PipelineTrackerProps {
+  currentStatus?: string;
+}
+
+const PipelineTracker = ({ currentStatus }: PipelineTrackerProps) => {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const activeIndex = Math.max(STEPS.indexOf(currentStatus), 0);
+  const activeIndex = Math.max(STEPS.indexOf(currentStatus ?? ''), 0);
 
   return (
     <View>
@@ -62,7 +67,7 @@ const PipelineTracker = ({ currentStatus }) => {
 
 export default PipelineTracker;
 
-const makeStyles = (colors) => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   trackRow: {
     flexDirection: 'row',
     alignItems: 'center',

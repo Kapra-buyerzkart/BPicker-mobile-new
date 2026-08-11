@@ -1,4 +1,8 @@
-import axios from 'axios';
+import axios, {
+  type AxiosError,
+  type AxiosResponse,
+  type InternalAxiosRequestConfig,
+} from 'axios';
 import { API_CONFIG } from '../config/api';
 
 const httpClient = axios.create({
@@ -10,23 +14,30 @@ const httpClient = axios.create({
   },
 });
 
-let refreshTokenHandler = null;
-let isRefreshing = false;
-let failedQueue = [];
+export type RefreshTokenHandler = () => Promise<string>;
 
-const processQueue = (error, token = null) => {
+interface QueuedRequest {
+  resolve: (token: string) => void;
+  reject: (error: unknown) => void;
+}
+
+let refreshTokenHandler: RefreshTokenHandler | null = null;
+let isRefreshing = false;
+let failedQueue: QueuedRequest[] = [];
+
+const processQueue = (error: unknown, token: string | null = null): void => {
   failedQueue.forEach((promise) => {
     if (error) {
       promise.reject(error);
       return;
     }
-    promise.resolve(token);
+    promise.resolve(token as string);
   });
 
   failedQueue = [];
 };
 
-export const setAuthToken = (token) => {
+export const setAuthToken = (token: string | null | undefined): void => {
   if (token) {
     httpClient.defaults.headers.common.Authorization = `Bearer ${token}`;
     return;
@@ -35,25 +46,20 @@ export const setAuthToken = (token) => {
   delete httpClient.defaults.headers.common.Authorization;
 };
 
-export const setRefreshTokenHandler = (handler) => {
+export const setRefreshTokenHandler = (handler: RefreshTokenHandler): void => {
   refreshTokenHandler = handler;
 };
 
 httpClient.interceptors.request.use(
-  (config) => {
-    const baseURL = config.baseURL || '';
-    const url = config.url || '';
-    const method = (config.method || 'GET').toUpperCase();
-    const fullURL = `${baseURL}${url}`;
-    return config;
-  },
-  (error) => Promise.reject(error)
+  (config: InternalAxiosRequestConfig) => config,
+  (error: unknown) => Promise.reject(error)
 );
 
 httpClient.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error?.config || {};
+  (response: AxiosResponse) => response,
+  async (error: AxiosError) => {
+    const originalRequest = (error?.config ??
+      {}) as InternalAxiosRequestConfig;
     const responseStatus = error?.response?.status;
 
     if (
@@ -66,7 +72,7 @@ httpClient.interceptors.response.use(
     }
 
     if (isRefreshing) {
-      return new Promise((resolve, reject) => {
+      return new Promise<string>((resolve, reject) => {
         failedQueue.push({ resolve, reject });
       }).then((token) => {
         originalRequest.headers = originalRequest.headers || {};

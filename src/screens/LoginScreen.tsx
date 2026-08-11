@@ -12,6 +12,8 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { wp, hp, RADIUS, FONT_SIZES } from '../styles/theme';
 import { useTheme } from '../theme';
+import type { ThemeColors } from '../theme';
+import type { RootStackScreenProps } from '../types/navigation';
 import { FONTS } from '../styles/typography';
 import { loginPickerAgent } from '../services/authService';
 import {
@@ -21,7 +23,7 @@ import {
 import AppTextInput from '../components/AppTextInput';
 import AppButton from '../components/AppButton';
 
-const LoginScreen = ({ navigation }) => {
+const LoginScreen = ({ navigation }: RootStackScreenProps<'Login'>) => {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [showPassword, setShowPassword] = useState(false);
@@ -86,7 +88,7 @@ const LoginScreen = ({ navigation }) => {
       navigation.replace('Home', {
         storeName: loginData?.storeName || '',
       });
-    } catch (error) {
+    } catch (error: any) {
       setErrorMessage(
         error?.response?.data?.message ||
           error?.message ||
@@ -167,7 +169,7 @@ const LoginScreen = ({ navigation }) => {
 
 export default LoginScreen;
 
-const makeStyles = (colors) => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.primary,

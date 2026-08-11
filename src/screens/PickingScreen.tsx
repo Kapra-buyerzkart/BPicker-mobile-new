@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
+import type { ThemeColors } from '../theme';
 import AppHeader from '../components/AppHeader';
 import EmptyState from '../components/EmptyState';
 
@@ -25,7 +26,7 @@ const PickingScreen = () => {
 
 export default PickingScreen;
 
-const makeStyles = (colors) => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.card,

@@ -26,7 +26,6 @@ const PALETTES: Record<ThemeMode, ThemeColors> = {
   dark: darkColors,
 };
 
-// Duration of the cross-fade played when the theme changes (~250ms).
 const FADE_DURATION = 250;
 
 const resolveInitialMode = (): ThemeMode =>
@@ -42,13 +41,9 @@ export const ThemeContext = createContext<ThemeContextValue>({
 });
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
-  // Start from the system preference; replaced by the stored value once
-  // hydration completes. Rendering is gated until then to avoid a flash.
   const [mode, setModeState] = useState<ThemeMode>(resolveInitialMode);
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // Overlay used for the cross-fade. It is filled with the *incoming*
-  // background color and faded out, smoothly revealing the re-themed UI.
   const fadeOverlay = useRef(new Animated.Value(0)).current;
   const isFirstApply = useRef(true);
 
@@ -68,7 +63,6 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  // Play the cross-fade whenever the mode actually changes (not on first paint).
   useEffect(() => {
     if (isFirstApply.current) {
       isFirstApply.current = false;

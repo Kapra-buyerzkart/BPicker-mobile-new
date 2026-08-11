@@ -1,13 +1,23 @@
 import httpClient from './httpClient';
 import { API_CONFIG } from '../config/api';
+import type {
+  ApiEnvelope,
+  Order,
+  OrderDetails,
+  OrderDetailsParams,
+  OrderItem,
+  OrderStatusLabel,
+  RawRecord,
+  UpdateOrderStatusParams,
+} from '../types/api';
 
-const STATUS_LABELS = {
+const STATUS_LABELS: Record<string, OrderStatusLabel> = {
   pending: 'Pending',
   picking: 'Picking',
   packed: 'Packed',
 };
 
-const resolveImageUrl = (value) => {
+const resolveImageUrl = (value: unknown): string | null => {
   if (!value) {
     return null;
   }
@@ -31,14 +41,19 @@ const resolveImageUrl = (value) => {
   return `${normalizedBase}${normalizedPath}`;
 };
 
-const normalizeOrder = (order, index, fallbackStatus) => ({
+const normalizeOrder = (
+  order: RawRecord,
+  index: number,
+  fallbackStatus: string
+): Order => ({
   id: String(order.id ?? index + 1),
   orderId: Number(order.orderId ?? order.id ?? 0),
   orderNumber:
     order.orderNumber ??
     order.order_number ??
     (order.orderId ? `#ORD${order.orderId}` : '#ORD-NA'),
-  orderDateTime: order.orderDateTime ?? order.order_date_time ?? order.orderDate ?? '',
+  orderDateTime:
+    order.orderDateTime ?? order.order_date_time ?? order.orderDate ?? '',
   orderType:
     order.orderType ??
     order.order_type ??
@@ -49,21 +64,29 @@ const normalizeOrder = (order, index, fallbackStatus) => ({
   status: order.status ?? fallbackStatus,
 });
 
-export const getOrders = async (status = 'pending') => {
+export const getOrders = async (status: string = 'pending'): Promise<Order[]> => {
   const normalizedStatus = String(status).toLowerCase();
-  const response = await httpClient.get('/pickeragent/orders', {
+  const response = await httpClient.get<
+    RawRecord[] | ApiEnvelope<RawRecord[] | { items?: RawRecord[] }>
+  >('/pickeragent/orders', {
     params: { status: normalizedStatus },
   });
 
-  const payload = Array.isArray(response.data)
-    ? response.data
-    : response.data?.data?.items ?? response.data?.data ?? [];
+  const data = response.data as any;
+  const payload: RawRecord[] = Array.isArray(data)
+    ? data
+    : data?.data?.items ?? data?.data ?? [];
 
   const fallbackStatus = STATUS_LABELS[normalizedStatus] || 'Pending';
-  return payload.map((order, index) => normalizeOrder(order, index, fallbackStatus));
+  return payload.map((order, index) =>
+    normalizeOrder(order, index, fallbackStatus)
+  );
 };
 
-export const updateOrderStatus = async ({ orderId, eventKey }) => {
+export const updateOrderStatus = async ({
+  orderId,
+  eventKey,
+}: UpdateOrderStatusParams): Promise<ApiEnvelope> => {
   const requestBody = { orderId, eventKey };
   console.log('[updateOrderStatus] request', {
     url: '/pickeragent/orders/updatestatus',
@@ -72,8 +95,11 @@ export const updateOrderStatus = async ({ orderId, eventKey }) => {
 
   let response;
   try {
-    response = await httpClient.post('/pickeragent/orders/updatestatus', requestBody);
-  } catch (error) {
+    response = await httpClient.post<ApiEnvelope>(
+      '/pickeragent/orders/updatestatus',
+      requestBody
+    );
+  } catch (error: any) {
     console.log('[updateOrderStatus] request failed', {
       body: requestBody,
       status: error?.response?.status,
@@ -95,13 +121,9 @@ export const updateOrderStatus = async ({ orderId, eventKey }) => {
   return response.data;
 };
 
-const normalizeOrderItem = (item, index) => ({
+const normalizeOrderItem = (item: RawRecord, index: number): OrderItem => ({
   id: String(
-    item.id ??
-    item.itemId ??
-    item.orderItemId ??
-    item.productId ??
-    index + 1
+    item.id ?? item.itemId ?? item.orderItemId ?? item.productId ?? index + 1
   ),
   name: item.name ?? item.productName ?? item.itemName ?? 'Item',
   qty: String(item.qty ?? item.quantity ?? 1),
@@ -109,34 +131,39 @@ const normalizeOrderItem = (item, index) => ({
   image:
     resolveImageUrl(
       item.featuredImage ??
-      item.featured_image ??
-      item.image ??
-      item.imageUrl ??
-      item.productImage
+        item.featured_image ??
+        item.image ??
+        item.imageUrl ??
+        item.productImage
     ) ?? 'https://via.placeholder.com/100',
-  category:
-    item.category ??
-    item.categoryName ??
-    item.section ??
-    'Items',
+  category: item.category ?? item.categoryName ?? item.section ?? 'Items',
   checked: Boolean(item.checked ?? item.isPicked ?? item.picked),
 });
 
-const normalizeOrderDetails = (payload = {}, fallback = {}) => {
-  const header = payload.header ?? payload;
-  const shippingAddress = payload.shippingAddress ?? {};
-  const summary = payload.summary ?? {};
+const normalizeOrderDetails = (
+  payload: RawRecord = {},
+  fallback: OrderDetailsParams = {}
+): OrderDetails => {
+  const header: RawRecord = payload.header ?? payload;
+  const shippingAddress: RawRecord = payload.shippingAddress ?? {};
+  const summary: RawRecord = payload.summary ?? {};
 
-  const categoriesRaw = Array.isArray(payload.categories) ? payload.categories : [];
+  const categoriesRaw: RawRecord[] = Array.isArray(payload.categories)
+    ? payload.categories
+    : [];
   const items = categoriesRaw.flatMap((category) => {
-    const itemsRaw = Array.isArray(category.items) ? category.items : [];
-    return itemsRaw.map((item, index) => normalizeOrderItem(
-      {
-        ...item,
-        category: category.catName ?? category.categoryName ?? 'Items',
-      },
-      index
-    ));
+    const itemsRaw: RawRecord[] = Array.isArray(category.items)
+      ? category.items
+      : [];
+    return itemsRaw.map((item, index) =>
+      normalizeOrderItem(
+        {
+          ...item,
+          category: category.catName ?? category.categoryName ?? 'Items',
+        },
+        index
+      )
+    );
   });
 
   return {
@@ -147,28 +174,26 @@ const normalizeOrderDetails = (payload = {}, fallback = {}) => {
       fallback.orderNumber ??
       '#ORD-NA',
     customer:
-      shippingAddress.custName ??
-      header.customerName ??
-      header.custName ??
-      '-',
+      shippingAddress.custName ?? header.customerName ?? header.custName ?? '-',
     amount: Number(summary.grandTotal ?? header.grandTotal ?? 0),
     payment:
-      header.paymentMethod ??
-      header.paymentMode ??
-      header.paymentType ??
-      '-',
-    phone:
-      String(shippingAddress.phone ?? header.phoneNo ?? header.phone ?? '-'),
+      header.paymentMethod ?? header.paymentMode ?? header.paymentType ?? '-',
+    phone: String(shippingAddress.phone ?? header.phoneNo ?? header.phone ?? '-'),
     items,
   };
 };
 
-export const getOrderDetails = async ({ orderId, orderNumber }) => {
+export const getOrderDetails = async ({
+  orderId,
+  orderNumber,
+}: OrderDetailsParams): Promise<OrderDetails> => {
   if (!orderId) {
     return normalizeOrderDetails({}, { orderId, orderNumber });
   }
 
-  const response = await httpClient.get(`/pickeragent/orders/${orderId}`);
+  const response = await httpClient.get<ApiEnvelope<RawRecord>>(
+    `/pickeragent/orders/${orderId}`
+  );
 
   if (!response?.data?.success) {
     throw new Error(response?.data?.message || 'Unable to fetch order details.');

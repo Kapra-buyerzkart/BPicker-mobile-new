@@ -1,16 +1,36 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import httpClient, { setAuthToken, setRefreshTokenHandler } from './httpClient';
+import type {
+  ApiEnvelope,
+  ChangePasswordParams,
+  LoginCredentials,
+  PickerProfile,
+  RawRecord,
+  StoredUser,
+} from '../types/api';
 
 const AUTH_STORAGE_KEYS = {
   ACCESS_TOKEN: '@picker/access_token',
   REFRESH_TOKEN: '@picker/refresh_token',
   USER: '@picker/user',
-};
+} as const;
 
-const persistAuthData = async ({ accessToken, refreshToken, userData }) => {
+interface PersistAuthDataParams {
+  accessToken?: string;
+  refreshToken?: string;
+  userData?: RawRecord;
+}
+
+const persistAuthData = async ({
+  accessToken,
+  refreshToken,
+  userData,
+}: PersistAuthDataParams): Promise<void> => {
   const existingUser = await AsyncStorage.getItem(AUTH_STORAGE_KEYS.USER);
-  const parsedExistingUser = existingUser ? JSON.parse(existingUser) : {};
-  const mergedUser = {
+  const parsedExistingUser: StoredUser = existingUser
+    ? JSON.parse(existingUser)
+    : {};
+  const mergedUser: StoredUser = {
     ...parsedExistingUser,
     ...(userData || {}),
     ...(accessToken ? { accessToken } : {}),
@@ -26,11 +46,17 @@ const persistAuthData = async ({ accessToken, refreshToken, userData }) => {
   setAuthToken(accessToken || '');
 };
 
-export const loginPickerAgent = async ({ phone, password }) => {
-  const response = await httpClient.post('/pickeragent/auth/login', {
-    phone,
-    password,
-  });
+export const loginPickerAgent = async ({
+  phone,
+  password,
+}: LoginCredentials): Promise<ApiEnvelope<RawRecord>> => {
+  const response = await httpClient.post<ApiEnvelope<RawRecord>>(
+    '/pickeragent/auth/login',
+    {
+      phone,
+      password,
+    }
+  );
 
   if (!response?.data?.success) {
     throw new Error(response?.data?.message || 'Login failed');
@@ -45,14 +71,16 @@ export const loginPickerAgent = async ({ phone, password }) => {
   return response.data;
 };
 
-export const refreshAccessToken = async () => {
-  const refreshToken = await AsyncStorage.getItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
+export const refreshAccessToken = async (): Promise<string> => {
+  const refreshToken = await AsyncStorage.getItem(
+    AUTH_STORAGE_KEYS.REFRESH_TOKEN
+  );
 
   if (!refreshToken) {
     throw new Error('Refresh token not found');
   }
 
-  const response = await httpClient.post(
+  const response = await httpClient.post<ApiEnvelope<RawRecord>>(
     '/auth/refreshtoken',
     { refreshToken },
     { skipAuthRefresh: true }
@@ -74,7 +102,7 @@ export const refreshAccessToken = async () => {
   return newAccessToken;
 };
 
-export const restoreAuthSession = async () => {
+export const restoreAuthSession = async (): Promise<string | null> => {
   const token = await AsyncStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
   if (token) {
     setAuthToken(token);
@@ -82,21 +110,23 @@ export const restoreAuthSession = async () => {
   return token;
 };
 
-export const getStoredUser = async () => {
+export const getStoredUser = async (): Promise<StoredUser | null> => {
   const userValue = await AsyncStorage.getItem(AUTH_STORAGE_KEYS.USER);
   if (!userValue) {
     return null;
   }
 
   try {
-    return JSON.parse(userValue);
+    return JSON.parse(userValue) as StoredUser;
   } catch {
     return null;
   }
 };
 
-export const getPickerProfile = async () => {
-  const response = await httpClient.get('/pickeragent/profile');
+export const getPickerProfile = async (): Promise<PickerProfile> => {
+  const response = await httpClient.get<ApiEnvelope<RawRecord>>(
+    '/pickeragent/profile'
+  );
 
   if (!response?.data?.success) {
     throw new Error(response?.data?.message || 'Unable to fetch profile');
@@ -121,11 +151,17 @@ export const getPickerProfile = async () => {
   };
 };
 
-export const changePickerPassword = async ({ oldpassword, newpassword }) => {
-  const response = await httpClient.post('/pickeragent/changepassword', {
-    oldpassword,
-    newpassword,
-  });
+export const changePickerPassword = async ({
+  oldpassword,
+  newpassword,
+}: ChangePasswordParams): Promise<ApiEnvelope> => {
+  const response = await httpClient.post<ApiEnvelope>(
+    '/pickeragent/changepassword',
+    {
+      oldpassword,
+      newpassword,
+    }
+  );
 
   if (!response?.data?.success) {
     throw new Error(response?.data?.message || 'Unable to change password');
@@ -134,11 +170,10 @@ export const changePickerPassword = async ({ oldpassword, newpassword }) => {
   return response.data;
 };
 
-export const logoutPickerAgent = async () => {
+export const logoutPickerAgent = async (): Promise<void> => {
   try {
     await httpClient.post('/auth/logout', {}, { skipAuthRefresh: true });
   } catch {
-    // Even when API logout fails, clear local auth state to force sign-out.
   }
 
   await AsyncStorage.multiRemove([

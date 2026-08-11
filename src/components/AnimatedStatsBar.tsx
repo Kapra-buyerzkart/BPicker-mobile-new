@@ -4,28 +4,39 @@ import Animated, {
   useAnimatedStyle,
   interpolate,
   Extrapolation,
+  type SharedValue,
 } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { RADIUS, FONT_SIZES, wp, hp } from '../styles/theme';
 import { FONTS } from '../styles/typography';
 import { useTheme } from '../theme';
+import type { ThemeColors } from '../theme';
 
-// Stage 2: the stat cards morph into a compact sticky toolbar between
-// 50px and 120px of scroll.
+type AnimatedStyle = ReturnType<typeof useAnimatedStyle>;
+
 const STATS_START = 50;
 const STATS_END = 120;
 const EXPANDED_H = hp('17%');
 const COMPACT_H = hp('6.4%');
 
-/**
- * A single stat. One TouchableOpacity owns the press (identical touch handling
- * to before); two cross-fading inner layers morph the expanded card into a
- * compact chip. The inner layers are pointerEvents="none" so the touchable
- * always receives the tap regardless of which layer is visible.
- *
- * The morph styles (radius / cross-fade) are computed once in the parent and
- * shared across every item, so all three cards animate from one worklet set.
- */
+export interface StatsBarItem {
+  color: string;
+  icon: string;
+  title: string;
+  count: number;
+  total: number;
+  isActive?: boolean;
+  onPress?: () => void;
+}
+
+type StatsBarStyles = ReturnType<typeof makeStyles>;
+
+interface StatItemProps extends StatsBarItem {
+  expandedStyle: AnimatedStyle;
+  compactStyle: AnimatedStyle;
+  styles: StatsBarStyles;
+}
+
 const StatItem = ({
   color,
   icon,
@@ -37,7 +48,7 @@ const StatItem = ({
   expandedStyle,
   compactStyle,
   styles,
-}) => {
+}: StatItemProps) => {
   const sharePct = total > 0 ? Math.min(100, Math.round((count / total) * 100)) : 0;
 
   return (
@@ -49,7 +60,6 @@ const StatItem = ({
       <Animated.View
         style={[styles.card, isActive && { borderColor: color }]}
       >
-        {/* Expanded card layer */}
         <Animated.View
           pointerEvents="none"
           style={[styles.expandedLayer, expandedStyle]}
@@ -64,7 +74,6 @@ const StatItem = ({
           </View>
         </Animated.View>
 
-        {/* Compact chip layer */}
         <Animated.View
           pointerEvents="none"
           style={[styles.compactLayer, compactStyle]}
@@ -78,13 +87,12 @@ const StatItem = ({
   );
 };
 
-/**
- * Replaces the static stat card grid with a scroll-driven morphing toolbar.
- * Data, colors, active state and touch handling are unchanged — only the
- * footprint animates. `scrollY` is a Reanimated shared value, so the morph
- * runs entirely on the UI thread.
- */
-const AnimatedStatsBar = ({ scrollY, items }) => {
+export interface AnimatedStatsBarProps {
+  scrollY: SharedValue<number>;
+  items: StatsBarItem[];
+}
+
+const AnimatedStatsBar = ({ scrollY, items }: AnimatedStatsBarProps) => {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -97,10 +105,6 @@ const AnimatedStatsBar = ({ scrollY, items }) => {
     ),
   }));
 
-  // Full cross-dissolve across the whole morph: the card opacity and the chip
-  // opacity always sum to ~1, so the stat area never blanks mid-scroll. The
-  // previous staggered fades (card gone by 60%, chip not in until 50%) left a
-  // window where both layers were near-zero — that read as a flicker.
   const expandedStyle = useAnimatedStyle(() => ({
     opacity: interpolate(
       scrollY.value,
@@ -136,7 +140,7 @@ const AnimatedStatsBar = ({ scrollY, items }) => {
 
 export default React.memo(AnimatedStatsBar);
 
-const makeStyles = (colors) =>
+const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     grid: {
       flexDirection: 'row',
@@ -155,7 +159,6 @@ const makeStyles = (colors) =>
       borderColor: colors.border,
       overflow: 'hidden',
     },
-    // Expanded card content (mirrors SummaryCard's look).
     expandedLayer: {
       ...StyleSheet.absoluteFillObject,
       paddingVertical: hp('1.6%'),
@@ -194,7 +197,6 @@ const makeStyles = (colors) =>
       height: 4,
       borderRadius: 2,
     },
-    // Compact chip content.
     compactLayer: {
       ...StyleSheet.absoluteFillObject,
       flexDirection: 'row',

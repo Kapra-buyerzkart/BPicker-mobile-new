@@ -1,10 +1,27 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { RADIUS, FONT_SIZES, wp } from '../styles/theme';
 import { FONTS } from '../styles/typography';
 import { useTheme } from '../theme';
+import type { ThemeColors } from '../theme';
 
-const getStatusConfig = (colors, isDark) => ({
+interface StatusConfig {
+  label: string;
+  bg: string;
+  fg: string;
+  dot: string;
+}
+
+const getStatusConfig = (
+  colors: ThemeColors,
+  isDark: boolean,
+): Record<string, StatusConfig> => ({
   pending: { label: 'Pending', bg: colors.warningLight, fg: '#B45309', dot: colors.warning },
   picking: { label: 'Picking', bg: '#FFE8D6', fg: '#B7491F', dot: colors.secondary },
   packed: { label: 'Packed', bg: colors.infoLight, fg: isDark ? '#93C5FD' : '#1D4ED8', dot: colors.info },
@@ -18,9 +35,15 @@ const getStatusConfig = (colors, isDark) => ({
   cancelled: { label: 'Cancelled', bg: colors.dangerLight, fg: '#B91C1C', dot: colors.danger },
 });
 
-const normalizeKey = (status) => String(status || '').toLowerCase().replace(/[\s_-]/g, '');
+const normalizeKey = (status?: string) => String(status || '').toLowerCase().replace(/[\s_-]/g, '');
 
-const StatusBadge = ({ status, label, style }) => {
+export interface StatusBadgeProps {
+  status?: string;
+  label?: string;
+  style?: StyleProp<ViewStyle>;
+}
+
+const StatusBadge = ({ status, label, style }: StatusBadgeProps) => {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const statusConfig = useMemo(() => getStatusConfig(colors, isDark), [colors, isDark]);
@@ -42,7 +65,7 @@ const StatusBadge = ({ status, label, style }) => {
 
 export default StatusBadge;
 
-const makeStyles = () => StyleSheet.create({
+const makeStyles = (_colors: ThemeColors) => StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',

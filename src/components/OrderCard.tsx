@@ -9,14 +9,28 @@ import {
 } from '../styles/theme';
 import { FONTS } from '../styles/typography';
 import { useTheme } from '../theme';
+import type { ThemeColors } from '../theme';
 import StatusBadge from './StatusBadge';
-import AppButton from './AppButton';
-import PipelineTracker from './PipelineTracker';
+import AppButton, { type AppButtonVariant } from './AppButton';
 
-const CTA_BY_STATUS = {
+interface OrderCta {
+  label: string;
+  variant: AppButtonVariant;
+}
+
+const CTA_BY_STATUS: Record<string, OrderCta> = {
   Pending: { label: 'START', variant: 'primary' },
   Picking: { label: 'CONTINUE', variant: 'primary' },
 };
+
+export interface OrderCardProps {
+  orderId?: string;
+  date?: string;
+  slot?: string;
+  amount?: string | number;
+  onStartPress?: () => void;
+  selectedStatus?: string;
+}
 
 const OrderCard = ({
   orderId,
@@ -25,14 +39,14 @@ const OrderCard = ({
   amount,
   onStartPress,
   selectedStatus,
-}) => {
+}: OrderCardProps) => {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const formattedAmount = Number.isFinite(Number(amount))
     ? Number(amount).toFixed(2)
     : '0.00';
-  const cta = CTA_BY_STATUS[selectedStatus] || {
+  const cta = CTA_BY_STATUS[selectedStatus ?? ''] || {
     label: 'VIEW',
     variant: 'secondary',
   };
@@ -81,10 +95,6 @@ const OrderCard = ({
           <Text style={styles.orderMeta}>{slot}</Text>
         </View>
 
-        {/* <View style={styles.divider} /> */}
-
-        {/* <PipelineTracker currentStatus={selectedStatus} /> */}
-
         <View style={styles.divider} />
 
         <View style={styles.bottomRow}>
@@ -108,7 +118,7 @@ const OrderCard = ({
 
 export default OrderCard;
 
-const makeStyles = (colors) => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   card: {
     backgroundColor: colors.card,
     borderRadius: RADIUS.lg,
