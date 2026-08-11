@@ -64,12 +64,31 @@ export const getOrders = async (status = 'pending') => {
 };
 
 export const updateOrderStatus = async ({ orderId, eventKey }) => {
-  const response = await httpClient.post('/pickeragent/orders/updatestatus', {
-    orderId,
-    eventKey,
+  const requestBody = { orderId, eventKey };
+  console.log('[updateOrderStatus] request', {
+    url: '/pickeragent/orders/updatestatus',
+    body: requestBody,
   });
 
+  let response;
+  try {
+    response = await httpClient.post('/pickeragent/orders/updatestatus', requestBody);
+  } catch (error) {
+    console.log('[updateOrderStatus] request failed', {
+      body: requestBody,
+      status: error?.response?.status,
+      data: error?.response?.data,
+      message: error?.message,
+    });
+    throw error;
+  }
+
   if (!response?.data?.success) {
+    console.log('[updateOrderStatus] unsuccessful response', {
+      body: requestBody,
+      status: response?.status,
+      data: response?.data,
+    });
     throw new Error(response?.data?.message || 'Unable to update order status.');
   }
 
